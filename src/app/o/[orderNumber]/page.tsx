@@ -297,158 +297,207 @@ export default function CustomerCheckoutPage() {
       <main className="flex-1 px-4 pt-3.5 pb-28">
         {isPaid ? (
           /* ===================================================================
-              VIEW: CLEAN VERIFIED RECEIPT
+              VIEW: DELIGHTFUL PAYMENT SUCCESS & DIGITAL BOOKING PASS
               =================================================================== */
-          <div className="space-y-4 animate-in fade-in duration-200">
-            <div
-              id="receipt-voucher"
-              className="p-5 rounded-3xl bg-emerald-50/70 border border-emerald-100/70 space-y-4 print:border-none print:p-0 print:bg-white"
-            >
-              {/* Print Header */}
-              <div className="hidden print:block pb-3 border-b border-zinc-200">
-                <h1 className="text-lg font-bold text-zinc-950">{baker.name}</h1>
-                <p className="text-xs text-zinc-500">{baker.pickup_address}</p>
-                <p className="text-xs text-zinc-500">Phone: +{baker.phone}</p>
+          <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            {/* 1. Celebratory Success Hero */}
+            <div className="flex flex-col items-center text-center pt-2 pb-1 space-y-2.5 print:hidden">
+              <div className="w-14 h-14 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 animate-in zoom-in-50 duration-300">
+                <Check className="w-7 h-7 stroke-[3]" />
               </div>
-
-              {/* Status Banner */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-emerald-800 text-xs font-semibold">
-                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs">
-                    ✓
-                  </span>
-                  <span>Token Paid (₹{order.token_amount})</span>
-                </div>
-                <span className="text-[11px] font-semibold text-emerald-900 bg-emerald-100/80 px-2 py-0.5 rounded-full font-mono">
-                  #{order.order_number}
-                </span>
-              </div>
-
-              {/* Cake Spec */}
-              <div className="space-y-1">
-                <h2 className="text-xl font-bold text-zinc-950">
-                  {order.weight} {order.flavour}
+              <div className="space-y-0.5">
+                <h2 className="text-xl font-bold text-zinc-950 tracking-tight">
+                  Booking Confirmed!
                 </h2>
-                <p className="text-xs text-zinc-600">
-                  {order.is_eggless ? "100% Eggless" : "With Egg"} • {order.time_slot} ({order.delivery_date})
+                <p className="text-xs text-zinc-500">
+                  ₹{order.token_amount} advance token received • Slot is locked
                 </p>
               </div>
+            </div>
 
-              {/* Message on Cake */}
-              {order.cake_message && order.cake_message.trim() && (
-                <div className="p-3 rounded-2xl bg-white space-y-0.5">
-                  <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider">
-                    Text on Cake
-                  </span>
-                  <p className="text-sm font-semibold text-zinc-950">
-                    "{order.cake_message}"
-                  </p>
-                </div>
-              )}
-
-              {/* Reference Photos */}
-              {referenceImages.length > 0 && (
-                <div className="p-3 rounded-2xl bg-white space-y-2">
-                  <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider block">
-                    Design Reference ({referenceImages.length})
-                  </span>
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                    {referenceImages.map((imgUrl, i) => (
-                      <div
-                        key={i}
-                        onClick={() => setEnlargedImage(imgUrl)}
-                        className="cursor-pointer relative w-16 h-16 rounded-xl overflow-hidden bg-zinc-100 shrink-0"
-                      >
-                        <img
-                          src={imgUrl}
-                          alt={`Design ${i + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ))}
+            {/* 2. Digital Booking Pass (The Ticket) */}
+            <div
+              id="receipt-voucher"
+              className="rounded-3xl bg-[#f4f4f5] border border-zinc-200/80 overflow-hidden space-y-0 print:border-none print:p-0 print:bg-white"
+            >
+              {/* Pass Top Banner */}
+              <div className="p-4 bg-zinc-950 text-white flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] text-zinc-400 uppercase tracking-widest font-semibold">
+                    Booking Pass
+                  </div>
+                  <div className="text-sm font-bold truncate max-w-[200px]">
+                    {baker.name}
                   </div>
                 </div>
-              )}
-
-              {/* Selected Add-ons */}
-              {order.addons && order.addons.length > 0 && (
-                <div className="p-3 rounded-2xl bg-white space-y-1.5">
-                  <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider block">
-                    Party Items
+                <div className="text-right">
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-bold font-mono">
+                    #{order.order_number}
                   </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {order.addons.map((addon) => (
-                      <span
-                        key={addon.id}
-                        className="px-2 py-0.5 rounded-lg bg-zinc-100 text-zinc-800 text-xs font-medium"
-                      >
-                        {addon.name} (+₹{addon.price})
+                </div>
+              </div>
+
+              {/* Pass Body Content */}
+              <div className="p-4 space-y-3.5 bg-[#f4f4f5]">
+                {/* Cake Highlight */}
+                <div className="space-y-1">
+                  <h3 className="text-xl font-bold text-zinc-950 leading-snug">
+                    {order.weight} {order.flavour}
+                  </h3>
+                  <div className="flex items-center gap-2 text-xs text-zinc-600 font-medium">
+                    <span className="px-2 py-0.5 rounded-md bg-white border border-zinc-200/60 text-[11px]">
+                      {order.is_eggless ? "100% Eggless" : "With Egg"}
+                    </span>
+                    <span>•</span>
+                    <span>{order.time_slot}</span>
+                  </div>
+                </div>
+
+                {/* Handover & Slot Schedule */}
+                <div className="p-3.5 rounded-2xl bg-white border border-zinc-200/60 space-y-2 text-xs">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-0.5 min-w-0">
+                      <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider">
+                        Date & Ready Time
                       </span>
-                    ))}
+                      <div className="font-bold text-zinc-900">
+                        {order.delivery_date} ({order.time_slot})
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-md bg-zinc-100 text-[11px] font-semibold text-zinc-700 shrink-0">
+                      {order.fulfilment_type === "delivery" ? "Home Delivery" : "Self Pickup"}
+                    </span>
+                  </div>
+
+                  <div className="pt-2 border-t border-zinc-100 flex items-start gap-2 text-zinc-700">
+                    <MapPin className="w-3.5 h-3.5 shrink-0 text-zinc-400 mt-0.5" />
+                    <div className="min-w-0 text-[11px]">
+                      <div className="font-semibold text-zinc-900">
+                        {order.fulfilment_type === "delivery" ? "Deliver to:" : "Pickup from:"}
+                      </div>
+                      <div className="text-zinc-500 mt-0.5 break-words">
+                        {order.fulfilment_type === "delivery"
+                          ? order.delivery_address || "Address shared with baker"
+                          : baker.pickup_address}
+                      </div>
+                      {order.fulfilment_type === "pickup" && baker.google_maps_url && (
+                        <a
+                          href={baker.google_maps_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 mt-1 hover:underline print:hidden"
+                        >
+                          <span>Open in Google Maps</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
-              )}
 
-              {/* Fulfilment Details */}
-              <div className="p-3 rounded-2xl bg-white text-xs space-y-2">
+                {/* Message on Cake (if present) */}
+                {order.cake_message && order.cake_message.trim() && (
+                  <div className="p-3 rounded-2xl bg-white border border-zinc-200/60 space-y-0.5">
+                    <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider">
+                      Text to be piped on Cake
+                    </span>
+                    <p className="text-sm font-semibold text-zinc-950">
+                      "{order.cake_message}"
+                    </p>
+                  </div>
+                )}
+
+                {/* Reference Photos (if uploaded) */}
+                {referenceImages.length > 0 && (
+                  <div className="p-3 rounded-2xl bg-white border border-zinc-200/60 space-y-2">
+                    <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider block">
+                      Cake Design Screenshot ({referenceImages.length})
+                    </span>
+                    <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none">
+                      {referenceImages.map((imgUrl, i) => (
+                        <div
+                          key={i}
+                          onClick={() => setEnlargedImage(imgUrl)}
+                          className="cursor-pointer relative w-16 h-16 rounded-xl overflow-hidden bg-zinc-100 shrink-0 border border-zinc-200/60"
+                        >
+                          <img
+                            src={imgUrl}
+                            alt={`Design ${i + 1}`}
+                            className="w-full h-full object-cover hover:scale-105 transition-transform"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Selected Addons (if any) */}
+                {order.addons && order.addons.length > 0 && (
+                  <div className="p-3 rounded-2xl bg-white border border-zinc-200/60 space-y-1.5">
+                    <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider block">
+                      Party Items
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {order.addons.map((addon) => (
+                        <span
+                          key={addon.id}
+                          className="px-2 py-0.5 rounded-lg bg-zinc-100 text-zinc-800 text-xs font-medium"
+                        >
+                          {addon.name} (+₹{addon.price})
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Customer Info (if present) */}
                 {order.customer_name && (
-                  <div className="flex items-center justify-between text-zinc-800">
-                    <span className="text-zinc-500">Customer</span>
-                    <span className="font-semibold">
+                  <div className="px-1 flex items-center justify-between text-xs text-zinc-600">
+                    <span>Customer:</span>
+                    <span className="font-semibold text-zinc-900">
                       {order.customer_name} {order.customer_phone ? `(${order.customer_phone})` : ""}
                     </span>
                   </div>
                 )}
-                <div className="flex items-start gap-2 pt-1 border-t border-zinc-100 text-zinc-700">
-                  <MapPin className="w-3.5 h-3.5 shrink-0 text-zinc-400 mt-0.5" />
-                  <div className="min-w-0">
-                    <div className="font-semibold text-zinc-900">
-                      {order.fulfilment_type === "delivery" ? "Home Delivery" : "Self Pickup"}
-                    </div>
-                    <div className="text-zinc-500 mt-0.5 break-words">
-                      {order.fulfilment_type === "delivery"
-                        ? order.delivery_address || "Address shared with baker"
-                        : baker.pickup_address}
-                    </div>
-                    {order.fulfilment_type === "pickup" && baker.google_maps_url && (
-                      <a
-                        href={baker.google_maps_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 mt-1 hover:underline print:hidden"
-                      >
-                        <span>Open in Google Maps</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
+
+                {/* Financial Tear-off Ledger */}
+                <div className="pt-3 border-t border-dashed border-zinc-300 space-y-1.5 text-xs">
+                  <div className="flex items-center justify-between text-zinc-500">
+                    <span>Total Cake Value:</span>
+                    <span className="font-semibold text-zinc-800">₹{order.total_price}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-emerald-700 font-semibold">
+                    <span className="flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5 stroke-[3]" /> Token Advance Paid:
+                    </span>
+                    <span>₹{order.token_amount}</span>
+                  </div>
+                  <div className="pt-2 border-t border-zinc-200 flex items-center justify-between text-zinc-950 font-bold">
+                    <span>Balance Due at Handover:</span>
+                    <span className="text-base text-zinc-950">₹{order.balance_amount}</span>
                   </div>
                 </div>
               </div>
-
-              {/* Balance Due */}
-              <div className="pt-2 border-t border-emerald-200/60 flex items-center justify-between text-xs">
-                <span className="text-zinc-600">Balance due at handover:</span>
-                <span className="text-base font-bold text-zinc-950">
-                  ₹{order.balance_amount}
-                </span>
-              </div>
             </div>
 
-            {/* Voucher Actions */}
+            {/* 3. Action Buttons */}
             <div className="space-y-2 pt-1 print:hidden">
+              <button
+                onClick={handleSendSimpleWhatsApp}
+                className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-xs"
+              >
+                <svg className="w-4 h-4 fill-white shrink-0" viewBox="0 0 24 24">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                </svg>
+                <span>Notify Baker on WhatsApp</span>
+              </button>
+
               <button
                 onClick={handleDownloadPdf}
                 className="w-full py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-xs transition-all active:scale-[0.99] flex items-center justify-center gap-2"
               >
                 <Download className="w-4 h-4 text-white" />
-                <span>Download Receipt (PDF)</span>
-              </button>
-
-              <button
-                onClick={handleSendSimpleWhatsApp}
-                className="w-full py-3.5 rounded-2xl bg-[#f4f4f5] hover:bg-zinc-200 text-zinc-800 font-semibold text-xs transition-all active:scale-[0.99] flex items-center justify-center gap-2"
-              >
-                <span>Notify Baker on WhatsApp</span>
+                <span>Save / Download PDF Pass</span>
               </button>
             </div>
           </div>
