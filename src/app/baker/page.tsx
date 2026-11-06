@@ -45,6 +45,13 @@ const TIME_SLOTS = [
   "8:00 PM - 9:00 PM",
 ];
 
+const BESTSELLER_PRESETS = [
+  { label: "1 Kg Truffle", weight: "1 Kg", flavour: "Chocolate Truffle", price: 700, eggless: true },
+  { label: "0.5 Kg Pineapple", weight: "0.5 Kg", flavour: "Pineapple Fresh", price: 550, eggless: true },
+  { label: "0.5 Kg Red Velvet", weight: "0.5 Kg", flavour: "Red Velvet", price: 600, eggless: true },
+  { label: "1 Kg Black Forest", weight: "1 Kg", flavour: "Black Forest", price: 650, eggless: true },
+];
+
 const isValidCakeMessage = (msg?: string) => {
   if (!msg) return false;
   const t = msg.trim().toLowerCase();
@@ -600,21 +607,21 @@ export default function BakerPOSPage() {
         </main>
 
         {/* =======================================================================
-            FAST 1-SCREEN ORDER BUILDER (ZERO WIZARD FRICTION)
+            APPLE / STRIPE MINIMALIST ORDER MODAL (ZERO COGNITIVE LOAD)
             ======================================================================= */}
         {isCreating && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-2xl relative overflow-hidden">
-              {/* Header */}
-              <div className="px-5 py-3.5 border-b border-zinc-100 flex items-center justify-between bg-white shrink-0">
+              {/* Clean Modal Header */}
+              <div className="px-5 py-4 border-b border-zinc-100 flex items-center justify-between bg-white shrink-0">
                 <div>
                   <h2 className="text-base font-bold text-zinc-950">
                     {createdOrder ? "Order Link Ready" : "New Order Link"}
                   </h2>
-                  <p className="text-[11px] text-zinc-500">
+                  <p className="text-[11px] text-zinc-400 mt-0.5">
                     {createdOrder
                       ? "Share with customer to collect token"
-                      : "Create custom booking link in seconds"}
+                      : "Quick advance booking link"}
                   </p>
                 </div>
                 <button
@@ -634,9 +641,9 @@ export default function BakerPOSPage() {
                   </div>
                   <div>
                     <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-mono font-bold">
-                      #{createdOrder.order_number}
+                      #{createdOrder.order_number} Ready
                     </span>
-                    <h3 className="text-lg font-bold text-zinc-950 mt-1.5">
+                    <h3 className="text-lg font-bold text-zinc-950 mt-2">
                       {createdOrder.weight} {createdOrder.flavour}
                     </h3>
                     <p className="text-xs text-zinc-500 mt-0.5">
@@ -668,243 +675,200 @@ export default function BakerPOSPage() {
                   </div>
                 </div>
               ) : (
-                /* SINGLE-SCREEN ORDER BUILDER */
+                /* ULTRA-LEAN 3-CARD BUILDER (0 COGNITIVE LOAD) */
                 <>
-                  <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 text-xs">
-                    {/* 1. Preference Toggle */}
-                    <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-[#f4f4f5]">
-                      <button
-                        type="button"
-                        onClick={() => setIsEggless(true)}
-                        className={`py-2 rounded-lg font-semibold transition-all ${
-                          isEggless
-                            ? "bg-white text-zinc-950 shadow-xs"
-                            : "text-zinc-600 hover:text-zinc-950"
-                        }`}
-                      >
-                        100% Eggless
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsEggless(false)}
-                        className={`py-2 rounded-lg font-semibold transition-all ${
-                          !isEggless
-                            ? "bg-white text-zinc-950 shadow-xs"
-                            : "text-zinc-600 hover:text-zinc-950"
-                        }`}
-                      >
-                        With Egg
-                      </button>
-                    </div>
-
-                    {/* 2. Weight */}
+                  <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3.5 text-xs">
+                    {/* Bestseller 1-Tap Presets */}
                     <div>
-                      <label className="font-bold text-zinc-950 block mb-1.5">
-                        Weight
-                      </label>
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {WEIGHT_OPTIONS.map((w) => (
+                      <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-0.5">
+                        {BESTSELLER_PRESETS.map((preset) => (
                           <button
-                            key={w}
+                            key={preset.label}
                             type="button"
-                            onClick={() => setWeight(w)}
-                            className={`py-2 rounded-xl font-bold transition-all ${
-                              weight === w
-                                ? "bg-zinc-950 text-white shadow-xs"
-                                : "bg-[#f4f4f5] text-zinc-800 hover:bg-zinc-200"
-                            }`}
+                            onClick={() => {
+                              setWeight(preset.weight);
+                              setFlavour(preset.flavour);
+                              setCustomFlavour("");
+                              setTotalPrice(preset.price);
+                              setCustomPrice("");
+                              setIsEggless(preset.eggless);
+                            }}
+                            className="px-2.5 py-1.5 rounded-xl bg-[#f4f4f5] hover:bg-zinc-200 text-zinc-800 text-[11px] font-semibold transition-all shrink-0 active:scale-95"
                           >
-                            {w}
+                            {preset.label} (₹{preset.price})
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    {/* 3. Flavour */}
-                    <div>
-                      <label className="font-bold text-zinc-950 block mb-1.5">
-                        Flavour
-                      </label>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {FLAVOUR_OPTIONS.map((f) => {
-                          const isSelected = flavour === f;
-                          return (
-                            <button
-                              key={f}
-                              type="button"
-                              onClick={() => {
-                                setFlavour(f);
-                                if (f !== "Custom / Other") setCustomFlavour("");
-                              }}
-                              className={`py-2.5 px-3 rounded-xl font-semibold text-left truncate transition-all ${
-                                isSelected
-                                  ? "bg-zinc-950 text-white shadow-xs"
-                                  : "bg-[#f4f4f5] text-zinc-800 hover:bg-zinc-200"
-                              }`}
-                            >
-                              {f}
-                            </button>
-                          );
-                        })}
+                    {/* CARD 1: THE CAKE SPEC */}
+                    <div className="p-3.5 rounded-2xl bg-[#f4f4f5] space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                          Cake Specification
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsEggless(!isEggless)}
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
+                            isEggless
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-amber-100 text-amber-900"
+                          }`}
+                        >
+                          {isEggless ? "100% Eggless ✓" : "With Egg"}
+                        </button>
                       </div>
+
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="col-span-1">
+                          <label className="text-[10px] text-zinc-400 font-medium block mb-1">
+                            Weight
+                          </label>
+                          <select
+                            value={weight}
+                            onChange={(e) => setWeight(e.target.value)}
+                            className="w-full px-3 py-2.5 rounded-xl bg-white text-zinc-950 font-bold text-xs focus:outline-none border border-zinc-200/60"
+                          >
+                            {WEIGHT_OPTIONS.map((w) => (
+                              <option key={w} value={w}>
+                                {w}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="col-span-2">
+                          <label className="text-[10px] text-zinc-400 font-medium block mb-1">
+                            Flavour
+                          </label>
+                          <select
+                            value={flavour}
+                            onChange={(e) => {
+                              setFlavour(e.target.value);
+                              if (e.target.value !== "Custom / Other") setCustomFlavour("");
+                            }}
+                            className="w-full px-3 py-2.5 rounded-xl bg-white text-zinc-950 font-bold text-xs focus:outline-none border border-zinc-200/60"
+                          >
+                            {FLAVOUR_OPTIONS.map((f) => (
+                              <option key={f} value={f}>
+                                {f}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
                       {flavour === "Custom / Other" && (
                         <input
                           type="text"
                           autoFocus
-                          placeholder="Type custom flavour (e.g. Lotus Biscoff)..."
+                          placeholder="Type custom flavour name..."
                           value={customFlavour}
                           onChange={(e) => setCustomFlavour(e.target.value)}
-                          className="w-full mt-2 px-3.5 py-2.5 rounded-xl bg-[#f4f4f5] text-zinc-950 text-xs font-medium focus:outline-none"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-white text-zinc-950 text-xs font-semibold focus:outline-none border border-zinc-200/60"
                         />
                       )}
                     </div>
 
-                    {/* 4. Total Price */}
-                    <div>
-                      <label className="font-bold text-zinc-950 block mb-1.5">
-                        Total Price
-                      </label>
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {PRICE_PRESETS.map((p) => {
-                          const isSelected = !customPrice && totalPrice === p;
-                          return (
-                            <button
-                              key={p}
-                              type="button"
-                              onClick={() => {
-                                setTotalPrice(p);
-                                setCustomPrice("");
-                              }}
-                              className={`py-2 rounded-xl font-bold transition-all ${
-                                isSelected
-                                  ? "bg-zinc-950 text-white shadow-xs"
-                                  : "bg-[#f4f4f5] text-zinc-800 hover:bg-zinc-200"
-                              }`}
-                            >
-                              ₹{p}
-                            </button>
-                          );
-                        })}
+                    {/* CARD 2: AGREED PRICE */}
+                    <div className="p-3.5 rounded-2xl bg-[#f4f4f5] flex items-center justify-between gap-3">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">
+                          Agreed Total Price
+                        </span>
+                        <span className="text-[11px] text-zinc-500">
+                          ₹{baker.default_token_amount || 100} advance token
+                        </span>
                       </div>
-                      <input
-                        type="number"
-                        placeholder="Or enter custom amount (e.g. 1200)"
-                        value={customPrice}
-                        onChange={(e) => setCustomPrice(e.target.value)}
-                        className="w-full mt-2 px-3.5 py-2.5 rounded-xl bg-[#f4f4f5] text-zinc-950 text-xs font-medium focus:outline-none"
-                      />
+                      <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-xl border border-zinc-200/60">
+                        <span className="text-zinc-400 font-bold text-sm">₹</span>
+                        <input
+                          type="number"
+                          value={customPrice || totalPrice}
+                          onChange={(e) => {
+                            setCustomPrice(e.target.value);
+                            setTotalPrice(Number(e.target.value) || 0);
+                          }}
+                          className="w-20 text-right font-bold text-base text-zinc-950 focus:outline-none"
+                        />
+                      </div>
                     </div>
 
-                    {/* 5. Date & Time */}
-                    <div>
-                      <label className="font-bold text-zinc-950 block mb-1.5">
-                        When Needed
-                      </label>
-                      <div className="grid grid-cols-3 gap-1.5 mb-2">
-                        {(() => {
-                          const today = new Date().toISOString().split("T")[0];
-                          const tomorrow = new Date(Date.now() + 86400000)
-                            .toISOString()
-                            .split("T")[0];
-                          const dayAfter = new Date(Date.now() + 86400000 * 2)
-                            .toISOString()
-                            .split("T")[0];
-                          return (
-                            <>
+                    {/* CARD 3: HANDOVER DATE & TIME */}
+                    <div className="p-3.5 rounded-2xl bg-[#f4f4f5] space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                          When Needed
+                        </span>
+                        <div className="flex items-center gap-1">
+                          {["Today", "Tomorrow"].map((label) => {
+                            const dStr =
+                              label === "Today"
+                                ? new Date().toISOString().split("T")[0]
+                                : new Date(Date.now() + 86400000)
+                                    .toISOString()
+                                    .split("T")[0];
+                            const isSel = deliveryDate === dStr;
+                            return (
                               <button
+                                key={label}
                                 type="button"
-                                onClick={() => setDeliveryDate(today)}
-                                className={`py-2 rounded-xl font-semibold ${
-                                  deliveryDate === today
+                                onClick={() => setDeliveryDate(dStr)}
+                                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
+                                  isSel
                                     ? "bg-zinc-950 text-white"
-                                    : "bg-[#f4f4f5] text-zinc-700"
+                                    : "bg-white text-zinc-600 hover:text-zinc-950"
                                 }`}
                               >
-                                Today
+                                {label}
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => setDeliveryDate(tomorrow)}
-                                className={`py-2 rounded-xl font-semibold ${
-                                  deliveryDate === tomorrow
-                                    ? "bg-zinc-950 text-white"
-                                    : "bg-[#f4f4f5] text-zinc-700"
-                                }`}
-                              >
-                                Tomorrow
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setDeliveryDate(dayAfter)}
-                                className={`py-2 rounded-xl font-semibold ${
-                                  deliveryDate === dayAfter
-                                    ? "bg-zinc-950 text-white"
-                                    : "bg-[#f4f4f5] text-zinc-700"
-                                }`}
-                              >
-                                Day After
-                              </button>
-                            </>
-                          );
-                        })()}
+                            );
+                          })}
+                        </div>
                       </div>
-                      <input
-                        type="date"
-                        value={deliveryDate}
-                        min={new Date().toISOString().split("T")[0]}
-                        onChange={(e) => setDeliveryDate(e.target.value)}
-                        className="w-full mb-2 px-3 py-2 rounded-xl bg-[#f4f4f5] text-xs text-zinc-950 font-medium focus:outline-none"
-                      />
-                      <div className="grid grid-cols-2 gap-1.5 mb-2">
-                        {TIME_SLOTS.map((slot) => (
-                          <button
-                            key={slot}
-                            type="button"
-                            onClick={() => {
-                              setTimeSlot(slot);
-                              setCustomTime("");
-                            }}
-                            className={`py-2 px-2 rounded-xl text-[11px] font-semibold text-center truncate ${
-                              timeSlot === slot && !customTime
-                                ? "bg-zinc-950 text-white"
-                                : "bg-[#f4f4f5] text-zinc-700 hover:bg-zinc-200"
-                            }`}
-                          >
-                            {slot}
-                          </button>
-                        ))}
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="date"
+                          value={deliveryDate}
+                          min={new Date().toISOString().split("T")[0]}
+                          onChange={(e) => setDeliveryDate(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl bg-white text-xs font-semibold text-zinc-950 focus:outline-none border border-zinc-200/60"
+                        />
+                        <select
+                          value={timeSlot}
+                          onChange={(e) => {
+                            setTimeSlot(e.target.value);
+                            setCustomTime("");
+                          }}
+                          className="w-full px-3 py-2 rounded-xl bg-white text-xs font-semibold text-zinc-950 focus:outline-none border border-zinc-200/60"
+                        >
+                          {TIME_SLOTS.map((slot) => (
+                            <option key={slot} value={slot}>
+                              {slot}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                      <input
-                        type="text"
-                        placeholder="Or custom time (e.g. 8:30 PM)"
-                        value={customTime}
-                        onChange={(e) => setCustomTime(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#f4f4f5] text-zinc-950 placeholder-zinc-400 focus:outline-none font-medium"
-                      />
                     </div>
                   </div>
 
-                  {/* Sticky Modal Bottom Action Bar */}
-                  <div className="p-4 border-t border-zinc-100 bg-white space-y-2 shrink-0">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-zinc-500 font-medium truncate max-w-[240px]">
-                        {weight} • {flavour === "Custom / Other" ? customFlavour || "Custom" : flavour} ({isEggless ? "Eggless" : "Egg"})
-                      </span>
-                      <span className="font-bold text-zinc-950 text-sm">
-                        ₹{customPrice ? Number(customPrice) : totalPrice}
-                      </span>
-                    </div>
-
+                  {/* Sticky 1-Tap Action Bar */}
+                  <div className="p-4 border-t border-zinc-100 bg-white space-y-2.5 shrink-0">
                     <button
                       type="button"
                       onClick={finalizeOrder}
-                      className="w-full py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs transition-all active:scale-[0.99] shadow-xs flex items-center justify-center gap-2"
+                      className="w-full py-4 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-sm transition-all active:scale-[0.99] shadow-xs flex items-center justify-center gap-2"
                     >
-                      <span>⚡ Generate Booking Link</span>
+                      <span>⚡ Create & Share on WhatsApp</span>
                     </button>
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        )}
             </div>
           </div>
         )}
