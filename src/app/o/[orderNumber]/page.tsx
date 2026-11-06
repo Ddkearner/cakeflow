@@ -7,6 +7,8 @@ import {
   getOrderByNumber,
   saveLocalOrder,
   getLocalBakers,
+  fetchRemoteOrderByNumber,
+  fetchRemoteBaker,
 } from "@/lib/store";
 import {
   buildUpiIntentLink,
@@ -68,37 +70,48 @@ export default function CustomerCheckoutPage() {
       setIsLoading(false);
       return;
     }
-    const found = getOrderByNumber(orderNumber);
-    if (found) {
-      setOrder(found);
-      setCakeMessage(found.cake_message || "");
-      if (found.reference_images && found.reference_images.length > 0) {
-        setReferenceImages(found.reference_images);
-      } else if (found.reference_image) {
-        setReferenceImages([found.reference_image]);
-      }
-      if (found.addons && found.addons.length > 0) {
-        setSelectedAddons(found.addons);
-        setShowAddonsSection(true);
-      }
-      setCustomerName(found.customer_name || "");
-      setCustomerPhone(found.customer_phone || "");
-      setFulfilmentType(found.fulfilment_type || "pickup");
-      setDeliveryAddress(found.delivery_address || "");
-      if (
-        found.status === "confirmed" ||
-        found.status === "baked" ||
-        found.status === "completed"
-      ) {
-        setIsPaid(true);
+
+    const loadOrderData = async () => {
+      let found = getOrderByNumber(orderNumber);
+      if (!found) {
+        found = (await fetchRemoteOrderByNumber(orderNumber)) || undefined;
       }
 
-      const bakers = getLocalBakers();
-      const b = bakers.find((item) => item.id === found.baker_id);
-      if (b) setBaker(b);
-    }
-    const timer = setTimeout(() => setIsLoading(false), 150);
-    return () => clearTimeout(timer);
+      if (found) {
+        setOrder(found);
+        setCakeMessage(found.cake_message || "");
+        if (found.reference_images && found.reference_images.length > 0) {
+          setReferenceImages(found.reference_images);
+        } else if (found.reference_image) {
+          setReferenceImages([found.reference_image]);
+        }
+        if (found.addons && found.addons.length > 0) {
+          setSelectedAddons(found.addons);
+          setShowAddonsSection(true);
+        }
+        setCustomerName(found.customer_name || "");
+        setCustomerPhone(found.customer_phone || "");
+        setFulfilmentType(found.fulfilment_type || "pickup");
+        setDeliveryAddress(found.delivery_address || "");
+        if (
+          found.status === "confirmed" ||
+          found.status === "baked" ||
+          found.status === "completed"
+        ) {
+          setIsPaid(true);
+        }
+
+        const bakers = getLocalBakers();
+        let b = bakers.find((item) => item.id === found?.baker_id);
+        if (!b && found.baker_id) {
+          b = (await fetchRemoteBaker(found.baker_id)) || undefined;
+        }
+        if (b) setBaker(b);
+      }
+      setIsLoading(false);
+    };
+
+    loadOrderData();
   }, [orderNumber]);
 
   // Handle Image Upload & Compression

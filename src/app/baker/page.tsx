@@ -7,6 +7,7 @@ import {
   getBakerByToken,
   getLocalOrders,
   saveLocalOrder,
+  fetchRemoteOrdersByBaker,
 } from "@/lib/store";
 import {
   generateOrderNumber,
@@ -111,31 +112,37 @@ export default function BakerPOSPage() {
       setBaker(currentBaker);
       const all = getLocalOrders();
       setOrders(all.filter((o) => o.baker_id === currentBaker.id));
+      fetchRemoteOrdersByBaker(currentBaker.id).then((remote) => {
+        if (remote && remote.length > 0) setOrders(remote);
+      });
     }
 
     const timer = setTimeout(() => setIsLoading(false), 200);
     return () => clearTimeout(timer);
   }, []);
 
-  const refreshOrders = (bakerId: string) => {
+  const refreshOrders = async (bakerId: string) => {
     const all = getLocalOrders();
     const bakerOrders = all.filter((o) => o.baker_id === bakerId);
     setOrders(bakerOrders);
+    const remote = await fetchRemoteOrdersByBaker(bakerId);
+    if (remote && remote.length > 0) setOrders(remote);
   };
 
   // 1. AUTO REFRESH: Poll every 3 seconds + Storage listener (cross-tab sync) + Window focus listener
   useEffect(() => {
     if (!baker) return;
 
-    const syncOrders = () => {
+    const syncOrders = async () => {
       const all = getLocalOrders();
       const bakerOrders = all.filter((o) => o.baker_id === baker.id);
-      setOrders((prev) => {
-        if (JSON.stringify(prev) !== JSON.stringify(bakerOrders)) {
-          return bakerOrders;
-        }
-        return prev;
-      });
+      setOrders(bakerOrders);
+
+      // Cloud Sync from Supabase
+      const remote = await fetchRemoteOrdersByBaker(baker.id);
+      if (remote && remote.length > 0) {
+        setOrders(remote);
+      }
     };
 
     const pollInterval = setInterval(syncOrders, 3000);

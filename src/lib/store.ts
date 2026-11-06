@@ -1,4 +1,5 @@
 import { Baker, Order } from "./types";
+import { supabase } from "./supabase";
 
 export const SEED_BAKERS: Baker[] = [
   {
@@ -77,7 +78,9 @@ const STORAGE_KEYS = {
   ACTIVE_BAKER_TOKEN: "cakeflow_active_baker_token",
 };
 
-// Client-side helper functions for LocalStorage persistence
+// ============================================================================
+// LOCAL STORAGE METHODS (INSTANT 0MS CLIENT FEEDBACK)
+// ============================================================================
 export function getLocalBakers(): Baker[] {
   if (typeof window === "undefined") return SEED_BAKERS;
   try {
@@ -102,6 +105,9 @@ export function saveLocalBaker(baker: Baker): void {
     bakers.unshift(baker);
   }
   localStorage.setItem(STORAGE_KEYS.BAKERS, JSON.stringify(bakers));
+
+  // Background Cloud Sync to Supabase
+  syncBakerToCloud(baker).catch(() => {});
 }
 
 export function getLocalOrders(): Order[] {
@@ -121,13 +127,18 @@ export function getLocalOrders(): Order[] {
 export function saveLocalOrder(order: Order): void {
   if (typeof window === "undefined") return;
   const orders = getLocalOrders();
-  const index = orders.findIndex((o) => o.id === order.id || o.order_number === order.order_number);
+  const index = orders.findIndex(
+    (o) => o.id === order.id || o.order_number === order.order_number
+  );
   if (index >= 0) {
     orders[index] = order;
   } else {
     orders.unshift(order);
   }
   localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+
+  // Background Cloud Sync to Supabase
+  syncOrderToCloud(order).catch(() => {});
 }
 
 export function getOrderByNumber(orderNumber: string): Order | undefined {
@@ -148,3 +159,200 @@ export function getBakerByToken(token: string): Baker | undefined {
   return bakers.find((b) => b.secret_token === token);
 }
 
+// ============================================================================
+// SUPABASE CLOUD SYNC & FETCH METHODS
+// ============================================================================
+
+export async function syncOrderToCloud(order: Order): Promise<boolean> {
+  try {
+    const payload = {
+      id: order.id,
+      order_number: order.order_number,
+      baker_id: order.baker_id,
+      flavour: order.flavour,
+      weight: order.weight,
+      is_eggless: order.is_eggless,
+      total_price: order.total_price,
+      token_amount: order.token_amount,
+      balance_amount: order.balance_amount,
+      delivery_date: order.delivery_date,
+      time_slot: order.time_slot,
+      fulfilment_type: order.fulfilment_type || "pickup",
+      delivery_address: order.delivery_address || null,
+      cake_message: order.cake_message || null,
+      reference_image: order.reference_image || null,
+      reference_images: order.reference_images || [],
+      addons: order.addons || [],
+      special_notes: order.special_notes || null,
+      status: order.status || "pending_token",
+      customer_name: order.customer_name || null,
+      customer_phone: order.customer_phone || null,
+    };
+
+    const { error } = await supabase.from("orders").upsert(payload, {
+      onConflict: "id",
+    });
+
+    if (error) {
+      console.warn("Supabase order sync warning:", error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn("Supabase network error:", err);
+    return false;
+  }
+}
+
+export async function syncBakerToCloud(baker: Baker): Promise<boolean> {
+  try {
+    const payload = {
+      id: baker.id,
+      slug: baker.slug,
+      name: baker.name,
+      tagline: baker.tagline,
+      phone: baker.phone,
+      upi_id: baker.upi_id,
+      pickup_address: baker.pickup_address,
+      google_maps_url: baker.google_maps_url || null,
+      secret_token: baker.secret_token,
+      default_token_amount: baker.default_token_amount || 100,
+    };
+
+    const { error } = await supabase.from("bakers").upsert(payload, {
+      onConflict: "id",
+    });
+
+    if (error) {
+      console.warn("Supabase baker sync warning:", error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn("Supabase baker sync network error:", err);
+    return false;
+  }
+}
+
+export async function fetchRemoteOrderByNumber(
+  orderNumber: string
+): Promise<Order | null> {
+  try {
+    const normalized = orderNumber.toUpperCase().replace("#", "");
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .ilike("order_number", normalized)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    const order: Order = {
+      id: data.id,
+      order_number: data.order_number,
+      baker_id: data.baker_id,
+      flavour: data.flavour,
+      weight: data.weight,
+      is_eggless: data.is_eggless,
+      total_price: data.total_price,
+      token_amount: data.token_amount,
+      balance_amount: data.balance_amount,
+      delivery_date: data.delivery_date,
+      time_slot: data.time_slot,
+      fulfilment_type: data.fulfilment_type,
+      delivery_address: data.delivery_address || undefined,
+      cake_message: data.cake_message || undefined,
+      reference_image: data.reference_image || undefined,
+      reference_images: data.reference_images || undefined,
+      addons: data.addons || undefined,
+      special_notes: data.special_notes || undefined,
+      status: data.status,
+      customer_name: data.customer_name || undefined,
+      customer_phone: data.customer_phone || undefined,
+      created_at: data.created_at,
+    };
+
+    // Update local cache
+    saveLocalOrder(order);
+    return order;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchRemoteOrdersByBaker(bakerId: string): Promise<Order[]> {
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("baker_id", bakerId)
+      .order("created_at", { ascending: false });
+
+    if (error || !data) return [];
+
+    const orders: Order[] = data.map((d) => ({
+      id: d.id,
+      order_number: d.order_number,
+      baker_id: d.baker_id,
+      flavour: d.flavour,
+      weight: d.weight,
+      is_eggless: d.is_eggless,
+      total_price: d.total_price,
+      token_amount: d.token_amount,
+      balance_amount: d.balance_amount,
+      delivery_date: d.delivery_date,
+      time_slot: d.time_slot,
+      fulfilment_type: d.fulfilment_type,
+      delivery_address: d.delivery_address || undefined,
+      cake_message: d.cake_message || undefined,
+      reference_image: d.reference_image || undefined,
+      reference_images: d.reference_images || undefined,
+      addons: d.addons || undefined,
+      special_notes: d.special_notes || undefined,
+      status: d.status,
+      customer_name: d.customer_name || undefined,
+      customer_phone: d.customer_phone || undefined,
+      created_at: d.created_at,
+    }));
+
+    // Merge with local storage
+    if (typeof window !== "undefined" && orders.length > 0) {
+      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+    }
+
+    return orders;
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchRemoteBaker(bakerId: string): Promise<Baker | null> {
+  try {
+    const { data, error } = await supabase
+      .from("bakers")
+      .select("*")
+      .eq("id", bakerId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    const baker: Baker = {
+      id: data.id,
+      slug: data.slug,
+      name: data.name,
+      tagline: data.tagline,
+      phone: data.phone,
+      upi_id: data.upi_id,
+      pickup_address: data.pickup_address,
+      google_maps_url: data.google_maps_url || undefined,
+      secret_token: data.secret_token,
+      default_token_amount: data.default_token_amount || 100,
+      created_at: data.created_at,
+    };
+
+    saveLocalBaker(baker);
+    return baker;
+  } catch {
+    return null;
+  }
+}
