@@ -2,7 +2,6 @@
 
 import { DotPattern } from "@/components/ui/dot-pattern";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 
 export default function Home() {
   return (
@@ -23,20 +22,6 @@ export default function Home() {
         )}
       />
 
-      {/* Discrete minimal bottom navigation */}
-      <div className="z-10 absolute bottom-6 flex items-center gap-6 text-xs text-neutral-400">
-        <Link href="/baker" className="hover:text-black transition-colors">
-          baker
-        </Link>
-        <span>•</span>
-        <Link href="/o/CK-892" className="hover:text-black transition-colors">
-          order
-        </Link>
-        <span>•</span>
-        <Link href="/admin" className="hover:text-black transition-colors">
-          admin
-        </Link>
-      </div>
     </div>
   );
 }
