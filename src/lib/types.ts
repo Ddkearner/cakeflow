@@ -9,6 +9,8 @@ export interface Baker {
   google_maps_url?: string;
   secret_token: string;
   default_token_amount: number;
+  pin?: string; // 4-digit PIN for quick kitchen POS lock screen (default '1234')
+  max_daily_cakes?: number; // Daily oven/time capacity limit (default 4)
   created_at: string;
 }
 

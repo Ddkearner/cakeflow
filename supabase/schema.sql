@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS public.bakers (
   google_maps_url TEXT,
   secret_token TEXT UNIQUE NOT NULL,
   default_token_amount INT DEFAULT 100,
+  pin TEXT DEFAULT '1234',
+  max_daily_cakes INT DEFAULT 4,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -72,3 +74,4 @@ INSERT INTO public.bakers (
   'sugarbloom_pos_key',
   100
 ) ON CONFLICT (id) DO NOTHING;
+

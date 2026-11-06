@@ -26,6 +26,11 @@ import {
   Phone,
   MapPin,
   Download,
+  Lock,
+  Unlock,
+  AlertCircle,
+  Shield,
+  Delete,
 } from "lucide-react";
 import { RainbowButton } from "@/components/ui/rainbow-button";
 import { MovingBorderButton } from "@/components/ui/moving-border";
@@ -65,6 +70,13 @@ export default function BakerPOSPage() {
   const [baker, setBaker] = useState<Baker | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Baker Authentication & PIN Terminal State
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [allBakers, setAllBakers] = useState<Baker[]>([]);
+  const [selectedBakerId, setSelectedBakerId] = useState<string>("");
+  const [pinInput, setPinInput] = useState<string>("");
+  const [pinError, setPinError] = useState<string>("");
   
   // Clean 3-Mode Filter: "kitchen" (Active to-bake & ready) vs "waiting" vs "delivered"
   const [statusFilter, setStatusFilter] = useState<"kitchen" | "waiting" | "delivered">("kitchen");
@@ -85,34 +97,48 @@ export default function BakerPOSPage() {
   const [deliveryDate, setDeliveryDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [timeSlot, setTimeSlot] = useState("6:00 PM - 7:00 PM");
   const [customTime, setCustomTime] = useState("");
+  const [allowRushOverride, setAllowRushOverride] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get("token");
 
-    let currentToken = urlToken;
+    const bakers = getLocalBakers();
+    setAllBakers(bakers);
+
+    let activeBaker: Baker | undefined;
+
+    // 1. If magic token in URL (Direct Link from WhatsApp/QR)
     if (urlToken) {
-      localStorage.setItem("cakeflow_active_token", urlToken);
+      activeBaker = getBakerByToken(urlToken);
+      if (activeBaker) {
+        localStorage.setItem("cakeflow_session_baker_id", activeBaker.id);
+        setBaker(activeBaker);
+        setIsAuthenticated(true);
+        setSelectedBakerId(activeBaker.id);
+      }
     } else {
-      currentToken = localStorage.getItem("cakeflow_active_token");
+      // 2. Check active persistent session
+      const savedBakerId = localStorage.getItem("cakeflow_session_baker_id");
+      if (savedBakerId) {
+        activeBaker = bakers.find((b) => b.id === savedBakerId);
+        if (activeBaker) {
+          setBaker(activeBaker);
+          setIsAuthenticated(true);
+          setSelectedBakerId(activeBaker.id);
+        }
+      }
     }
 
-    const allBakers = getLocalBakers();
-    let currentBaker: Baker | undefined;
-
-    if (currentToken) {
-      currentBaker = getBakerByToken(currentToken);
+    if (!activeBaker && bakers.length > 0) {
+      setSelectedBakerId(bakers[0].id);
+      setIsAuthenticated(false);
     }
 
-    if (!currentBaker && allBakers.length > 0) {
-      currentBaker = allBakers[0];
-    }
-
-    if (currentBaker) {
-      setBaker(currentBaker);
+    if (activeBaker) {
       const all = getLocalOrders();
-      setOrders(all.filter((o) => o.baker_id === currentBaker.id));
-      fetchRemoteOrdersByBaker(currentBaker.id).then((remote) => {
+      setOrders(all.filter((o) => o.baker_id === activeBaker?.id));
+      fetchRemoteOrdersByBaker(activeBaker.id).then((remote) => {
         if (remote && remote.length > 0) setOrders(remote);
       });
     }
@@ -120,6 +146,49 @@ export default function BakerPOSPage() {
     const timer = setTimeout(() => setIsLoading(false), 200);
     return () => clearTimeout(timer);
   }, []);
+
+  // Handle PIN entry on lock screen
+  const handlePinDigit = (digit: string) => {
+    if (pinInput.length >= 4) return;
+    const newPin = pinInput + digit;
+    setPinInput(newPin);
+    setPinError("");
+
+    if (newPin.length === 4) {
+      const targetBaker = allBakers.find((b) => b.id === selectedBakerId);
+      const expectedPin = targetBaker?.pin || "1234";
+
+      if (newPin === expectedPin && targetBaker) {
+        setBaker(targetBaker);
+        setIsAuthenticated(true);
+        localStorage.setItem("cakeflow_session_baker_id", targetBaker.id);
+        setPinInput("");
+        const all = getLocalOrders();
+        setOrders(all.filter((o) => o.baker_id === targetBaker.id));
+        fetchRemoteOrdersByBaker(targetBaker.id).then((remote) => {
+          if (remote && remote.length > 0) setOrders(remote);
+        });
+      } else {
+        setPinError("Incorrect PIN. Please try again.");
+        setTimeout(() => {
+          setPinInput("");
+          setPinError("");
+        }, 1200);
+      }
+    }
+  };
+
+  const handlePinBackspace = () => {
+    setPinInput((prev) => prev.slice(0, -1));
+    setPinError("");
+  };
+
+  const handleLockTerminal = () => {
+    localStorage.removeItem("cakeflow_session_baker_id");
+    setIsAuthenticated(false);
+    setPinInput("");
+    setPinError("");
+  };
 
   const refreshOrders = async (bakerId: string) => {
     const all = getLocalOrders();
@@ -248,6 +317,122 @@ export default function BakerPOSPage() {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  // =========================================================================
+  // VIEW: KITCHEN POS SECURITY LOCK SCREEN (4-DIGIT PIN TERMINAL)
+  // =========================================================================
+  if (!isAuthenticated) {
+    const currentBaker = allBakers.find((b) => b.id === selectedBakerId) || allBakers[0];
+
+    return (
+      <div className="min-h-screen bg-zinc-950 text-white flex flex-col justify-between px-6 py-10 max-w-sm mx-auto selection:bg-zinc-800 animate-in fade-in duration-200">
+        {/* Top Header */}
+        <div className="text-center space-y-2 pt-4">
+          <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-zinc-300">
+            <Lock className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight text-white">
+              Kitchen Terminal
+            </h1>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              Enter 4-digit PIN to access orders
+            </p>
+          </div>
+
+          {/* Baker Studio Switcher (if multiple bakeries configured) */}
+          {allBakers.length > 1 && (
+            <div className="pt-2">
+              <select
+                value={selectedBakerId}
+                onChange={(e) => {
+                  setSelectedBakerId(e.target.value);
+                  setPinInput("");
+                  setPinError("");
+                }}
+                className="px-3 py-1.5 rounded-xl bg-zinc-900 text-xs font-semibold text-zinc-300 border border-zinc-800 focus:outline-none cursor-pointer"
+              >
+                {allBakers.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* PIN Indicator Dots */}
+        <div className="py-6 space-y-3 text-center">
+          <div className="flex items-center justify-center gap-4">
+            {[0, 1, 2, 3].map((index) => {
+              const isFilled = pinInput.length > index;
+              return (
+                <div
+                  key={index}
+                  className={`w-3.5 h-3.5 rounded-full transition-all duration-200 ${
+                    isFilled
+                      ? "bg-emerald-400 scale-110 shadow-sm shadow-emerald-400/50"
+                      : "bg-zinc-800 border border-zinc-700"
+                  }`}
+                />
+              );
+            })}
+          </div>
+
+          {pinError ? (
+            <p className="text-xs font-semibold text-rose-400 animate-shake">
+              {pinError}
+            </p>
+          ) : (
+            <p className="text-[11px] text-zinc-500 font-mono">
+              Default Studio PIN: 1234
+            </p>
+          )}
+        </div>
+
+        {/* Numeric Keypad */}
+        <div className="space-y-3 pb-4">
+          <div className="grid grid-cols-3 gap-2.5 max-w-[280px] mx-auto">
+            {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((num) => (
+              <button
+                key={num}
+                type="button"
+                onClick={() => handlePinDigit(num)}
+                className="h-15 rounded-2xl bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 active:scale-95 text-xl font-bold text-white transition-all flex items-center justify-center border border-zinc-800/80 shadow-xs"
+              >
+                {num}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                setPinInput("");
+                setPinError("");
+              }}
+              className="h-15 rounded-2xl bg-transparent hover:bg-zinc-900 text-xs font-semibold text-zinc-400 transition-colors flex items-center justify-center"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePinDigit("0")}
+              className="h-15 rounded-2xl bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 active:scale-95 text-xl font-bold text-white transition-all flex items-center justify-center border border-zinc-800/80 shadow-xs"
+            >
+              0
+            </button>
+            <button
+              type="button"
+              onClick={handlePinBackspace}
+              className="h-15 rounded-2xl bg-transparent hover:bg-zinc-900 text-sm font-semibold text-zinc-400 transition-colors flex items-center justify-center active:scale-95"
+            >
+              ⌫
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!baker) return null;
 
   // Filter calculations
@@ -265,6 +450,13 @@ export default function BakerPOSPage() {
   const todayEarned = orders
     .filter((o) => o.status === "completed")
     .reduce((sum, o) => sum + o.total_price, 0);
+
+  // Daily Oven Capacity Calculations
+  const bookedOnDate = orders.filter(
+    (o) => o.delivery_date === deliveryDate && o.status !== "cancelled"
+  ).length;
+  const maxCapacity = baker.max_daily_cakes || 4;
+  const isDateCapacityFull = bookedOnDate >= maxCapacity;
 
   const getFriendlyDateHeader = (dateStr: string) => {
     const today = new Date().toISOString().split("T")[0];
@@ -302,6 +494,15 @@ export default function BakerPOSPage() {
             <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full">
               ₹{todayEarned.toLocaleString("en-IN")}
             </span>
+
+            <button
+              onClick={handleLockTerminal}
+              className="h-8 px-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold flex items-center gap-1 transition-colors"
+              title="Lock POS Terminal"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Lock</span>
+            </button>
 
             <RainbowButton
               onClick={handleStartNewOrder}
@@ -836,6 +1037,51 @@ export default function BakerPOSPage() {
                           ))}
                         </select>
                       </div>
+
+                      {/* Daily Oven Capacity Guard */}
+                      <div
+                        className={`p-3 rounded-2xl border text-xs flex items-center justify-between transition-all ${
+                          isDateCapacityFull
+                            ? "bg-amber-50/90 border-amber-200 text-amber-900"
+                            : "bg-white border-zinc-200/60 text-zinc-700"
+                        }`}
+                      >
+                        <div>
+                          <div className="font-semibold flex items-center gap-1.5">
+                            {isDateCapacityFull ? (
+                              <span className="text-amber-800 flex items-center gap-1 font-bold">
+                                <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                Oven Capacity Full ({bookedOnDate}/{maxCapacity})
+                              </span>
+                            ) : (
+                              <span className="text-zinc-900 font-bold">
+                                Oven Slots: {bookedOnDate}/{maxCapacity} booked
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-zinc-500 mt-0.5">
+                            {isDateCapacityFull
+                              ? "Daily baking limit reached for this date"
+                              : `${maxCapacity - bookedOnDate} slot(s) remaining`}
+                          </div>
+                        </div>
+
+                        {isDateCapacityFull ? (
+                          <label className="flex items-center gap-1.5 cursor-pointer bg-white px-2.5 py-1.5 rounded-xl border border-amber-300 font-bold text-[11px] text-amber-950 shadow-xs">
+                            <input
+                              type="checkbox"
+                              checked={allowRushOverride}
+                              onChange={(e) => setAllowRushOverride(e.target.checked)}
+                              className="rounded text-zinc-950 focus:ring-0"
+                            />
+                            <span>Rush (+1)</span>
+                          </label>
+                        ) : (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                            Open
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -843,10 +1089,19 @@ export default function BakerPOSPage() {
                   <div className="p-4 border-t border-zinc-100 bg-white space-y-2.5 shrink-0">
                     <button
                       type="button"
+                      disabled={isDateCapacityFull && !allowRushOverride}
                       onClick={finalizeOrder}
-                      className="w-full py-4 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-sm transition-all active:scale-[0.99] shadow-xs flex items-center justify-center gap-2"
+                      className={`w-full py-4 rounded-2xl font-bold text-sm transition-all active:scale-[0.99] flex items-center justify-center gap-2 ${
+                        isDateCapacityFull && !allowRushOverride
+                          ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                          : "bg-zinc-950 hover:bg-zinc-800 text-white shadow-xs"
+                      }`}
                     >
-                      <span>⚡ Create & Share on WhatsApp</span>
+                      {isDateCapacityFull && !allowRushOverride ? (
+                        <span>⚠️ Slot Full (Enable 'Rush' to accept)</span>
+                      ) : (
+                        <span>⚡ Create & Share on WhatsApp</span>
+                      )}
                     </button>
                   </div>
                 </>

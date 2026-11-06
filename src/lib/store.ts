@@ -13,6 +13,8 @@ export const SEED_BAKERS: Baker[] = [
     google_maps_url: "https://maps.google.com/?q=Indiranagar+Bangalore",
     secret_token: "sugarbloom_pos_key",
     default_token_amount: 100,
+    pin: "1234",
+    max_daily_cakes: 4,
     created_at: new Date().toISOString(),
   },
   {
@@ -26,6 +28,8 @@ export const SEED_BAKERS: Baker[] = [
     google_maps_url: "https://maps.google.com/?q=Gurugram+Sector+45",
     secret_token: "velvet_oven_pos_key",
     default_token_amount: 200,
+    pin: "1234",
+    max_daily_cakes: 4,
     created_at: new Date().toISOString(),
   },
 ];
@@ -217,6 +221,8 @@ export async function syncBakerToCloud(baker: Baker): Promise<boolean> {
       google_maps_url: baker.google_maps_url || null,
       secret_token: baker.secret_token,
       default_token_amount: baker.default_token_amount || 100,
+      pin: baker.pin || "1234",
+      max_daily_cakes: baker.max_daily_cakes || 4,
     };
 
     const { error } = await supabase.from("bakers").upsert(payload, {
@@ -347,6 +353,8 @@ export async function fetchRemoteBaker(bakerId: string): Promise<Baker | null> {
       google_maps_url: data.google_maps_url || undefined,
       secret_token: data.secret_token,
       default_token_amount: data.default_token_amount || 100,
+      pin: data.pin || "1234",
+      max_daily_cakes: data.max_daily_cakes || 4,
       created_at: data.created_at,
     };
 

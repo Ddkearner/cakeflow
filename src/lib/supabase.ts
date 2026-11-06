@@ -7,3 +7,4 @@ const supabaseAnonKey =
   "sb_publishable_fmXy-ZYZlYeYLLVl3cjxmg_r-UbzRqb";
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
