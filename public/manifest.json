@@ -1,0 +1,17 @@
+{
+  "name": "CakeFlow Baker POS",
+  "short_name": "CakeFlow",
+  "description": "Zero-Cognitive-Load Cake Booking & Kitchen POS",
+  "start_url": "/baker",
+  "display": "standalone",
+  "background_color": "#0f1115",
+  "theme_color": "#0f1115",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
+
