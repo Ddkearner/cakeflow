@@ -45,13 +45,6 @@ const TIME_SLOTS = [
   "8:00 PM - 9:00 PM",
 ];
 
-const BESTSELLER_PRESETS = [
-  { label: "1 Kg Truffle", weight: "1 Kg", flavour: "Chocolate Truffle", price: 700, eggless: true },
-  { label: "0.5 Kg Pineapple", weight: "0.5 Kg", flavour: "Pineapple Fresh", price: 550, eggless: true },
-  { label: "0.5 Kg Red Velvet", weight: "0.5 Kg", flavour: "Red Velvet", price: 600, eggless: true },
-  { label: "1 Kg Black Forest", weight: "1 Kg", flavour: "Black Forest", price: 650, eggless: true },
-];
-
 const isValidCakeMessage = (msg?: string) => {
   if (!msg) return false;
   const t = msg.trim().toLowerCase();
@@ -678,29 +671,6 @@ export default function BakerPOSPage() {
                 /* ULTRA-LEAN 3-CARD BUILDER (0 COGNITIVE LOAD) */
                 <>
                   <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3.5 text-xs">
-                    {/* Bestseller 1-Tap Presets */}
-                    <div>
-                      <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-0.5">
-                        {BESTSELLER_PRESETS.map((preset) => (
-                          <button
-                            key={preset.label}
-                            type="button"
-                            onClick={() => {
-                              setWeight(preset.weight);
-                              setFlavour(preset.flavour);
-                              setCustomFlavour("");
-                              setTotalPrice(preset.price);
-                              setCustomPrice("");
-                              setIsEggless(preset.eggless);
-                            }}
-                            className="px-2.5 py-1.5 rounded-xl bg-[#f4f4f5] hover:bg-zinc-200 text-zinc-800 text-[11px] font-semibold transition-all shrink-0 active:scale-95"
-                          >
-                            {preset.label} (₹{preset.price})
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
                     {/* CARD 1: THE CAKE SPEC */}
                     <div className="p-3.5 rounded-2xl bg-[#f4f4f5] space-y-2.5">
                       <div className="flex items-center justify-between">
