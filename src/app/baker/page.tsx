@@ -21,6 +21,8 @@ import {
   Check,
   Plus,
   RotateCw,
+  Clock,
+  Phone,
 } from "lucide-react";
 import { RainbowButton } from "@/components/ui/rainbow-button";
 import { MovingBorderButton } from "@/components/ui/moving-border";
@@ -36,20 +38,35 @@ const FLAVOUR_OPTIONS = [
 ];
 const PRICE_PRESETS = [550, 700, 850, 1000];
 const TIME_SLOTS = [
-  "1:00 PM - 2:00 PM",
-  "4:00 PM - 5:00 PM",
+  "11:00 AM - 1:00 PM",
+  "2:00 PM - 4:00 PM",
   "6:00 PM - 7:00 PM",
   "7:00 PM - 8:00 PM",
   "8:00 PM - 9:00 PM",
 ];
 
+const isValidCakeMessage = (msg?: string) => {
+  if (!msg) return false;
+  const t = msg.trim().toLowerCase();
+  return (
+    t.length > 0 &&
+    t !== "none" &&
+    t !== "no" &&
+    t !== "nil" &&
+    t !== "n/a" &&
+    t !== "null"
+  );
+};
+
 export default function BakerPOSPage() {
   const [baker, setBaker] = useState<Baker | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<"all" | "pending_token" | "confirmed" | "baked" | "completed">("all");
+  
+  // Clean 3-Mode Filter: "kitchen" (Active to-bake & ready) vs "waiting" vs "delivered"
+  const [statusFilter, setStatusFilter] = useState<"kitchen" | "waiting" | "delivered">("kitchen");
 
-  // Smooth Sheet & Wizard State
+  // Step Wizard State (Only opens when "+ New Order" is clicked)
   const [isCreating, setIsCreating] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -125,10 +142,8 @@ export default function BakerPOSPage() {
       });
     };
 
-    // Poll every 3s
     const pollInterval = setInterval(syncOrders, 3000);
 
-    // Cross-tab instant update (e.g. when customer pays token on /o/[orderNumber])
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "cakeflow_orders" || !e.key) {
         syncOrders();
@@ -136,7 +151,6 @@ export default function BakerPOSPage() {
     };
     window.addEventListener("storage", handleStorageChange);
 
-    // Update immediately when baker comes back to this tab
     const handleFocus = () => {
       syncOrders();
     };
@@ -165,7 +179,6 @@ export default function BakerPOSPage() {
     const diff = currentY - touchStartY.current;
 
     if (diff > 0 && scrollPos <= 10) {
-      // Natural logarithmic rubber-band resistance
       const pull = Math.min(85, diff * 0.45);
       setPullY(pull);
     } else {
@@ -179,7 +192,7 @@ export default function BakerPOSPage() {
 
     if (pullY >= 48) {
       setIsRefreshing(true);
-      setPullY(52); // Keep indicator held while syncing
+      setPullY(52);
       if (baker) {
         const all = getLocalOrders();
         setOrders(all.filter((o) => o.baker_id === baker.id));
@@ -282,7 +295,7 @@ export default function BakerPOSPage() {
 
   const handleSendViaWhatsApp = (order: Order) => {
     const link = getCustomerLink(order.order_number);
-    const message = `Please confirm your cake order details and advance token (₹${order.token_amount}) here:\n\n${link}\n\n${order.weight} ${order.flavour} (${order.is_eggless ? "Eggless" : "With Egg"})\nTime: ${order.time_slot}\nBalance Due at Pickup: ₹${order.balance_amount}`;
+    const message = `Please confirm your cake order details and advance token (₹${order.token_amount}) here:\n\n${link}\n\n${order.weight} ${order.flavour} (${order.is_eggless ? "100% Eggless" : "With Egg"})\nTime: ${order.time_slot}\nBalance Due at Pickup: ₹${order.balance_amount}`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`, "_blank");
   };
 
@@ -295,26 +308,53 @@ export default function BakerPOSPage() {
 
   if (!baker) return null;
 
+  // Filter calculations
+  const kitchenOrders = orders.filter((o) => o.status === "confirmed" || o.status === "baked");
+  const waitingOrders = orders.filter((o) => o.status === "pending_token");
+  const deliveredOrders = orders.filter((o) => o.status === "completed");
+
+  const displayedOrders =
+    statusFilter === "kitchen"
+      ? kitchenOrders
+      : statusFilter === "waiting"
+      ? waitingOrders
+      : deliveredOrders;
+
+  const todayEarned = orders
+    .filter((o) => o.status === "completed")
+    .reduce((sum, o) => sum + o.total_price, 0);
+
+  const getFriendlyDateHeader = (dateStr: string) => {
+    const today = new Date().toISOString().split("T")[0];
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+    if (dateStr === today) return "Today";
+    if (dateStr === tomorrow) return "Tomorrow";
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+    } catch {
+      return dateStr;
+    }
+  };
+
   return (
     <div
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      className={`min-h-screen bg-[#f4f4f5] text-zinc-950 selection:bg-zinc-200 relative ${
-        isCreating ? "h-screen overflow-hidden" : "overflow-y-auto"
-      }`}
+      className="min-h-screen bg-white text-zinc-950 selection:bg-zinc-200 relative overflow-x-hidden"
     >
       {/* =======================================================================
-          SWIPE / PULL TO REFRESH FLOATING INDICATOR PILL
+          SWIPE TO REFRESH FLOATING INDICATOR PILL
           ======================================================================= */}
       <div
-        className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-200 ${
+        className={`fixed top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-200 ${
           pullY > 0 || isRefreshing ? "opacity-100 translate-y-0 scale-100" : "opacity-0 -translate-y-4 scale-95"
         }`}
       >
         <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white shadow-lg border border-zinc-200/80 text-xs font-semibold text-zinc-800">
           <RotateCw
-            className={`w-3.5 h-3.5 text-zinc-800 transition-transform ${
+            className={`w-3.5 h-3.5 text-zinc-800 ${
               isRefreshing ? "animate-spin" : ""
             }`}
             style={{
@@ -337,43 +377,341 @@ export default function BakerPOSPage() {
           transform: pullY > 0 ? `translateY(${pullY * 0.4}px)` : undefined,
         }}
       >
-        
         {/* =======================================================================
-            TOP HEADER AREA (SCROLLS AWAY AND HIDES BUTTON AS SHEET ROLLS UP)
+            COMPACT HIGH-UTILITY TOP APP BAR (SINGLE ROW - ZERO SCREEN WASTE)
             ======================================================================= */}
-        <header
-          className={`shrink-0 transition-all duration-300 flex flex-col items-center justify-center text-center px-6 ${
-            isCreating ? "pt-5 pb-2" : "pt-12 pb-8"
-          }`}
-        >
-          {/* Default Title & Rainbow Button */}
-          {!isCreating && (
-            <div className="space-y-3.5 transition-all">
-              <div>
-                <h1 className="text-xl md:text-2xl font-bold tracking-tight text-zinc-950">
-                  {baker.name}
-                </h1>
-                <p className="text-xs text-zinc-500 mt-0.5 max-w-xs mx-auto truncate">
-                  {baker.pickup_address || "Indiranagar, Bengaluru"}
-                </p>
-              </div>
+        <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-zinc-100 px-5 py-3.5 flex items-center justify-between">
+          <div className="min-w-0 pr-3">
+            <h1 className="text-base font-bold text-zinc-950 tracking-tight flex items-center gap-1.5 truncate">
+              <span>{baker.name}</span>
+              <span className="w-3.5 h-3.5 rounded-full bg-zinc-950 text-white flex items-center justify-center text-[8px] font-bold shrink-0">
+                ✓
+              </span>
+            </h1>
+            <p className="text-[11px] text-zinc-400 truncate mt-0.5">
+              {baker.pickup_address || "Indiranagar, Bengaluru"}
+            </p>
+          </div>
 
-              <div className="pt-0.5">
-                <RainbowButton onClick={handleStartNewOrder}>
-                  <Plus className="w-4 h-4" />
-                  New Order
-                </RainbowButton>
-              </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full">
+              ₹{todayEarned.toLocaleString("en-IN")}
+            </span>
+
+            <RainbowButton
+              onClick={handleStartNewOrder}
+              size="sm"
+              className="h-8 rounded-xl px-3 text-xs font-semibold"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>New Order</span>
+            </RainbowButton>
+          </div>
+        </header>
+
+        {/* =======================================================================
+            STREAMLINED 3-SEGMENT KITCHEN FILTER BAR (ZERO SCROLL, ZERO FATIGUE)
+            ======================================================================= */}
+        <div className="px-5 pt-3 pb-2 sticky top-[57px] z-10 bg-white border-b border-zinc-100/60">
+          <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-zinc-100 text-xs font-semibold">
+            <button
+              onClick={() => setStatusFilter("kitchen")}
+              className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                statusFilter === "kitchen"
+                  ? "bg-white text-zinc-950 shadow-xs"
+                  : "text-zinc-500 hover:text-zinc-950"
+              }`}
+            >
+              <span>Kitchen</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  statusFilter === "kitchen" ? "bg-zinc-950 text-white" : "bg-zinc-200 text-zinc-600"
+                }`}
+              >
+                {kitchenOrders.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setStatusFilter("waiting")}
+              className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                statusFilter === "waiting"
+                  ? "bg-white text-zinc-950 shadow-xs"
+                  : "text-zinc-500 hover:text-zinc-950"
+              }`}
+            >
+              <span>Waiting</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  statusFilter === "waiting" ? "bg-zinc-950 text-white" : "bg-zinc-200 text-zinc-600"
+                }`}
+              >
+                {waitingOrders.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setStatusFilter("delivered")}
+              className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                statusFilter === "delivered"
+                  ? "bg-white text-zinc-950 shadow-xs"
+                  : "text-zinc-500 hover:text-zinc-950"
+              }`}
+            >
+              <span>Delivered</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  statusFilter === "delivered" ? "bg-zinc-950 text-white" : "bg-zinc-200 text-zinc-600"
+                }`}
+              >
+                {deliveredOrders.length}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* =======================================================================
+            FLAT KITCHEN TICKETS LIST (ZERO NESTED BOXES)
+            ======================================================================= */}
+        <main className="flex-1 px-5 pt-3 pb-24 space-y-3">
+          {isLoading ? (
+            <div className="space-y-3 pt-2">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="p-4 rounded-2xl bg-[#f4f4f5] animate-pulse space-y-3">
+                  <div className="flex justify-between">
+                    <div className="h-5 w-40 bg-zinc-200 rounded-md" />
+                    <div className="h-5 w-16 bg-zinc-200 rounded-full" />
+                  </div>
+                  <div className="h-3 w-48 bg-zinc-200 rounded" />
+                  <div className="h-10 bg-white rounded-xl" />
+                </div>
+              ))}
             </div>
-          )}
+          ) : displayedOrders.length === 0 ? (
+            <div className="py-20 text-center space-y-2">
+              <p className="text-sm font-bold text-zinc-950">
+                {statusFilter === "kitchen"
+                  ? "Kitchen is all caught up!"
+                  : statusFilter === "waiting"
+                  ? "No waiting orders"
+                  : statusFilter === "delivered"
+                  ? "No delivered orders yet"
+                  : "No orders yet"}
+              </p>
+              <p className="text-xs text-zinc-400 max-w-xs mx-auto">
+                {statusFilter === "kitchen"
+                  ? "New confirmed customer orders will appear here automatically."
+                  : "Tap 'New Order' at the top to create a booking link."}
+              </p>
+            </div>
+          ) : (
+            displayedOrders.map((ord) => {
+              // 1. COLLAPSED VIEW FOR DELIVERED ORDERS
+              if (ord.status === "completed") {
+                return (
+                  <div
+                    key={ord.id}
+                    className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-100/50 flex items-center justify-between gap-3 transition-transform active:scale-[0.99]"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-bold text-zinc-950 truncate">
+                        {ord.weight} {ord.flavour}
+                      </div>
+                      <div className="text-xs text-emerald-800/80 mt-0.5 flex items-center gap-1.5 truncate">
+                        <span>{getFriendlyDateHeader(ord.delivery_date)}</span>
+                        <span>•</span>
+                        <span>{ord.time_slot}</span>
+                        <span>•</span>
+                        <span className="font-semibold text-emerald-950">₹{ord.total_price}</span>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 shrink-0">
+                      Delivered ✓
+                    </span>
+                  </div>
+                );
+              }
 
-          {/* =======================================================================
-              STEP WIZARD (EXPANDS FULLSCREEN WHEN CREATING)
-              ======================================================================= */}
-          {isCreating && (
-            <div className="w-full py-2 animate-in fade-in duration-200">
-              {/* Top Navigation Bar: Back & Step Indicator */}
-              <div className="flex items-center justify-between pb-4 px-1">
+              // 2. COMPACT COLLAPSED VIEW FOR WAITING ORDERS (PENDING TOKEN)
+              if (ord.status === "pending_token") {
+                return (
+                  <div
+                    key={ord.id}
+                    className="p-3.5 rounded-2xl bg-[#f4f4f5] flex items-center justify-between gap-3 transition-transform active:scale-[0.99]"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-bold text-zinc-950 truncate">
+                        #{ord.order_number} • {ord.weight} {ord.flavour}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-zinc-500 mt-0.5">
+                        <span>{getFriendlyDateHeader(ord.delivery_date)}</span>
+                        <span>•</span>
+                        <span>{ord.time_slot}</span>
+                        <span>•</span>
+                        <span className="font-semibold text-zinc-900">₹{ord.total_price}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleSendViaWhatsApp(ord)}
+                      className="px-3 py-2 rounded-xl bg-white hover:bg-emerald-50 text-emerald-600 transition-colors active:scale-95 flex items-center gap-1.5 shrink-0 text-xs font-semibold shadow-2xs"
+                    >
+                      <svg className="w-3.5 h-3.5 fill-emerald-600" viewBox="0 0 24 24">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                      </svg>
+                      <span>Share</span>
+                    </button>
+                  </div>
+                );
+              }
+
+              // 3. FLAT CHEF TICKET FOR ACTIVE ORDERS (CONFIRMED / BAKING OR BAKED / READY)
+              return (
+                <div
+                  key={ord.id}
+                  className="p-4 rounded-2xl bg-[#f4f4f5] space-y-3 transition-all active:scale-[0.99]"
+                >
+                  {/* Top Line: Cake & Status */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-base font-bold text-zinc-950 truncate">
+                        {ord.weight} {ord.flavour}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-zinc-500 mt-0.5">
+                        <span className="font-semibold text-zinc-800">
+                          {ord.is_eggless ? "100% Eggless" : "With Egg"}
+                        </span>
+                        <span>•</span>
+                        <span>{getFriendlyDateHeader(ord.delivery_date)}</span>
+                        <span>•</span>
+                        <span>{ord.time_slot}</span>
+                      </div>
+                    </div>
+
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold shrink-0 ${
+                        ord.status === "confirmed"
+                          ? "bg-amber-100 text-amber-900"
+                          : "bg-emerald-100 text-emerald-900"
+                      }`}
+                    >
+                      {ord.status === "confirmed" ? "In Oven / Baking" : "Ready for Handover"}
+                    </span>
+                  </div>
+
+                  {/* Customer Line (Simple & Flat) */}
+                  {(ord.customer_name || ord.delivery_address) && (
+                    <div className="flex items-center justify-between text-xs text-zinc-700 pt-0.5">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <span className="font-semibold text-zinc-950">
+                          {ord.customer_name || "Customer"}
+                        </span>
+                        {ord.customer_phone && (
+                          <a
+                            href={`tel:${ord.customer_phone}`}
+                            className="text-zinc-500 font-mono text-[11px] hover:text-zinc-950 underline"
+                          >
+                            +{ord.customer_phone}
+                          </a>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-medium text-zinc-500 shrink-0">
+                        {ord.fulfilment_type === "delivery"
+                          ? `Delivery: ${ord.delivery_address || "Address provided"}`
+                          : "Self Pickup"}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Text on Cake (ONLY IF CUSTOMER ACTUALLY WROTE ONE) */}
+                  {isValidCakeMessage(ord.cake_message) && (
+                    <div className="px-3 py-2 rounded-xl bg-white text-xs border border-zinc-200/60 flex items-center gap-2">
+                      <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider shrink-0">
+                        Piped:
+                      </span>
+                      <span className="font-bold text-zinc-950 truncate">
+                        "{ord.cake_message}"
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Extra Party Addons (ONLY IF EXISTS) */}
+                  {ord.addons && ord.addons.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {ord.addons.map((a, i) => (
+                        <span
+                          key={i}
+                          className="px-2.5 py-0.5 rounded-md bg-white text-zinc-800 text-[11px] font-semibold border border-zinc-200/50"
+                        >
+                          + {a.name} (₹{a.price})
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Reference Design Photos (ONLY IF EXISTS) */}
+                  {((ord.reference_images && ord.reference_images.length > 0) || ord.reference_image) && (
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-0.5">
+                      {(ord.reference_images || [ord.reference_image]).map((img, i) => (
+                        <img
+                          key={i}
+                          src={img!}
+                          alt="Design"
+                          className="w-16 h-16 rounded-xl object-cover bg-white shrink-0 border border-zinc-200/60"
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Special Note (ONLY IF EXISTS AND NOT NONE) */}
+                  {ord.special_notes && isValidCakeMessage(ord.special_notes) && (
+                    <p className="text-xs text-zinc-500 italic bg-white/70 p-2 rounded-lg">
+                      Note: "{ord.special_notes}"
+                    </p>
+                  )}
+
+                  {/* Financial Ledger & 1 Clear Action Button */}
+                  <div className="pt-2 border-t border-zinc-200/60 flex items-center justify-between gap-3">
+                    <div className="text-xs">
+                      <div className="text-zinc-400 text-[10px]">Handover Balance</div>
+                      <div className="font-bold text-zinc-950 text-base">₹{ord.balance_amount}</div>
+                    </div>
+
+                    <div className="flex-1 max-w-[200px] flex justify-end">
+                      {ord.status === "confirmed" && (
+                        <MovingBorderButton
+                          onClick={() => updateOrderStatus(ord.id, "baked")}
+                          containerClassName="w-full h-10"
+                          className="bg-white text-zinc-950 font-bold text-xs hover:bg-zinc-50"
+                        >
+                          Mark as Baked ✓
+                        </MovingBorderButton>
+                      )}
+
+                      {ord.status === "baked" && (
+                        <button
+                          onClick={() => updateOrderStatus(ord.id, "completed")}
+                          className="w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all active:scale-95 shadow-xs"
+                        >
+                          Collected & Paid ✓
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </main>
+
+        {/* =======================================================================
+            NEW ORDER WIZARD MODAL (FULL OVERLAY WHEN CREATING)
+            ======================================================================= */}
+        {isCreating && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-5 shadow-2xl relative">
+              {/* Wizard Top Nav */}
+              <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -383,12 +721,12 @@ export default function BakerPOSPage() {
                       handleCloseWizard();
                     }
                   }}
-                  className="p-2 -ml-2 rounded-xl text-zinc-500 hover:text-zinc-950 hover:bg-zinc-200/50 transition-colors"
+                  className="p-1.5 -ml-1.5 rounded-xl text-zinc-500 hover:text-zinc-950 hover:bg-zinc-100"
                 >
                   {step > 1 && step < 5 ? (
-                    <ArrowLeft className="w-5 h-5" />
+                    <ArrowLeft className="w-4 h-4" />
                   ) : (
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4" />
                   )}
                 </button>
 
@@ -401,25 +739,28 @@ export default function BakerPOSPage() {
                           ? "w-6 bg-zinc-950"
                           : step > i
                           ? "w-1.5 bg-zinc-400"
-                          : "w-1.5 bg-zinc-300"
+                          : "w-1.5 bg-zinc-200"
                       }`}
                     />
                   ))}
                 </div>
+
+                <span className="text-[11px] font-mono text-zinc-400">
+                  {step < 5 ? `${step}/4` : "Done"}
+                </span>
               </div>
 
               {/* STEP 1: WEIGHT & EGGLESS PREFERENCE */}
               {step === 1 && (
-                <div className="space-y-4 text-center animate-in fade-in slide-in-from-bottom-3 duration-200">
+                <div className="space-y-4 text-center animate-in fade-in duration-150">
                   <div>
-                    <h2 className="text-2xl font-bold tracking-tight text-zinc-950">
+                    <h2 className="text-xl font-bold tracking-tight text-zinc-950">
                       Cake Type & Weight
                     </h2>
-                    <p className="text-xs text-zinc-500 mt-1">Select dietary preference and cake size</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">Select preference and size</p>
                   </div>
 
-                  {/* EGGLESS / WITH EGG TOGGLE */}
-                  <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-zinc-200/70 max-w-xs mx-auto">
+                  <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-[#f4f4f5]">
                     <button
                       type="button"
                       onClick={() => setIsEggless(true)}
@@ -444,16 +785,16 @@ export default function BakerPOSPage() {
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2.5 pt-1">
+                  <div className="grid grid-cols-2 gap-2 pt-1">
                     {WEIGHT_OPTIONS.map((w) => (
                       <button
                         key={w}
                         type="button"
                         onClick={() => selectWeight(w)}
-                        className={`py-4 rounded-2xl font-semibold text-base transition-all active:scale-95 duration-150 ${
+                        className={`py-4 rounded-2xl font-bold text-sm transition-all active:scale-95 ${
                           weight === w
-                            ? "bg-zinc-950 text-white"
-                            : "bg-white text-zinc-900 hover:bg-zinc-100"
+                            ? "bg-zinc-950 text-white shadow-xs"
+                            : "bg-[#f4f4f5] text-zinc-900 hover:bg-zinc-200"
                         }`}
                       >
                         {w}
@@ -465,21 +806,21 @@ export default function BakerPOSPage() {
 
               {/* STEP 2: FLAVOUR */}
               {step === 2 && (
-                <div className="space-y-5 text-center animate-in fade-in slide-in-from-bottom-3 duration-200">
+                <div className="space-y-4 text-center animate-in fade-in duration-150">
                   <div>
-                    <h2 className="text-2xl font-bold tracking-tight text-zinc-950">
+                    <h2 className="text-xl font-bold tracking-tight text-zinc-950">
                       Select Flavour
                     </h2>
-                    <p className="text-xs text-zinc-500 mt-1">For {weight} cake</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">For {weight} cake</p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2.5 pt-1">
+                  <div className="grid grid-cols-2 gap-2 pt-1">
                     {FLAVOUR_OPTIONS.map((f) => (
                       <button
                         key={f}
                         type="button"
                         onClick={() => selectFlavour(f)}
-                        className="py-4 px-3 rounded-2xl bg-white text-zinc-900 font-medium text-sm hover:bg-zinc-950 hover:text-white transition-all active:scale-95 duration-150 truncate"
+                        className="py-3 px-2 rounded-2xl bg-[#f4f4f5] text-zinc-900 font-semibold text-xs hover:bg-zinc-950 hover:text-white transition-all active:scale-95 truncate"
                       >
                         {f}
                       </button>
@@ -487,20 +828,20 @@ export default function BakerPOSPage() {
                   </div>
 
                   {flavour === "Custom" && (
-                    <div className="space-y-2 pt-2 animate-in fade-in duration-200">
+                    <div className="space-y-2 pt-1">
                       <input
                         type="text"
                         autoFocus
                         placeholder="Type custom flavour..."
                         value={customFlavour}
                         onChange={(e) => setCustomFlavour(e.target.value)}
-                        className="w-full px-4 py-3.5 rounded-2xl bg-white text-zinc-950 text-sm focus:outline-none"
+                        className="w-full px-4 py-3 rounded-xl bg-[#f4f4f5] text-zinc-950 text-xs focus:outline-none font-medium"
                       />
                       <button
                         type="button"
                         disabled={!customFlavour.trim()}
                         onClick={() => setStep(3)}
-                        className="w-full py-3.5 rounded-2xl bg-zinc-950 text-white font-medium text-sm disabled:opacity-40 transition-opacity"
+                        className="w-full py-3 rounded-xl bg-zinc-950 text-white font-semibold text-xs disabled:opacity-40"
                       >
                         Continue
                       </button>
@@ -511,36 +852,36 @@ export default function BakerPOSPage() {
 
               {/* STEP 3: PRICE */}
               {step === 3 && (
-                <div className="space-y-5 text-center animate-in fade-in slide-in-from-bottom-3 duration-200">
+                <div className="space-y-4 text-center animate-in fade-in duration-150">
                   <div>
-                    <h2 className="text-2xl font-bold tracking-tight text-zinc-950">
+                    <h2 className="text-xl font-bold tracking-tight text-zinc-950">
                       Agreed Price
                     </h2>
-                    <p className="text-xs text-zinc-500 mt-1">
+                    <p className="text-xs text-zinc-500 mt-0.5">
                       {weight} • {customFlavour || flavour}
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="grid grid-cols-2 gap-2 pt-1">
                     {PRICE_PRESETS.map((p) => (
                       <button
                         key={p}
                         type="button"
                         onClick={() => selectPrice(p)}
-                        className="py-5 rounded-2xl bg-white text-zinc-900 font-bold text-lg hover:bg-zinc-950 hover:text-white transition-all active:scale-95 duration-150"
+                        className="py-4 rounded-2xl bg-[#f4f4f5] text-zinc-950 font-bold text-base hover:bg-zinc-950 hover:text-white transition-all active:scale-95"
                       >
                         ₹{p}
                       </button>
                     ))}
                   </div>
 
-                  <div className="pt-2 flex items-center gap-2">
+                  <div className="pt-1 flex items-center gap-2">
                     <input
                       type="number"
-                      placeholder="Or custom amount (₹)"
+                      placeholder="Or custom (₹)"
                       value={customPrice}
                       onChange={(e) => setCustomPrice(e.target.value)}
-                      className="flex-1 px-4 py-3.5 rounded-2xl bg-white text-zinc-950 text-sm focus:outline-none font-medium"
+                      className="flex-1 px-4 py-3 rounded-xl bg-[#f4f4f5] text-zinc-950 text-xs font-semibold focus:outline-none"
                     />
                     {customPrice && (
                       <button
@@ -549,7 +890,7 @@ export default function BakerPOSPage() {
                           setTotalPrice(Number(customPrice));
                           setStep(4);
                         }}
-                        className="px-5 py-3.5 rounded-2xl bg-zinc-950 text-white font-medium text-sm active:scale-95 transition-all"
+                        className="px-4 py-3 rounded-xl bg-zinc-950 text-white font-semibold text-xs"
                       >
                         Next
                       </button>
@@ -560,21 +901,15 @@ export default function BakerPOSPage() {
 
               {/* STEP 4: DATE & TIME SLOT */}
               {step === 4 && (
-                <div className="space-y-4 text-center animate-in fade-in slide-in-from-bottom-3 duration-200">
+                <div className="space-y-4 text-center animate-in fade-in duration-150">
                   <div>
                     <h2 className="text-xl font-bold tracking-tight text-zinc-950">
                       Delivery Date & Time
                     </h2>
-                    <p className="text-xs text-zinc-500 mt-1">
-                      {weight} • {customFlavour || flavour} ({isEggless ? "Eggless" : "With Egg"})
-                    </p>
+                    <p className="text-xs text-zinc-500 mt-0.5">When should it be ready?</p>
                   </div>
 
-                  {/* DATE SELECTION CHIPS */}
-                  <div className="p-3.5 rounded-2xl bg-white space-y-2.5 text-left shadow-xs">
-                    <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block">
-                      Select Delivery Date
-                    </span>
+                  <div className="space-y-2 text-left">
                     <div className="grid grid-cols-3 gap-1.5">
                       {(() => {
                         const today = new Date().toISOString().split("T")[0];
@@ -585,10 +920,10 @@ export default function BakerPOSPage() {
                             <button
                               type="button"
                               onClick={() => setDeliveryDate(today)}
-                              className={`py-2 px-1 rounded-xl text-xs font-semibold transition-all text-center ${
+                              className={`py-2 rounded-xl text-xs font-semibold text-center ${
                                 deliveryDate === today
-                                  ? "bg-zinc-950 text-white shadow-xs"
-                                  : "bg-[#f4f4f5] text-zinc-700 hover:bg-zinc-200"
+                                  ? "bg-zinc-950 text-white"
+                                  : "bg-[#f4f4f5] text-zinc-700"
                               }`}
                             >
                               Today
@@ -596,10 +931,10 @@ export default function BakerPOSPage() {
                             <button
                               type="button"
                               onClick={() => setDeliveryDate(tomorrow)}
-                              className={`py-2 px-1 rounded-xl text-xs font-semibold transition-all text-center ${
+                              className={`py-2 rounded-xl text-xs font-semibold text-center ${
                                 deliveryDate === tomorrow
-                                  ? "bg-zinc-950 text-white shadow-xs"
-                                  : "bg-[#f4f4f5] text-zinc-700 hover:bg-zinc-200"
+                                  ? "bg-zinc-950 text-white"
+                                  : "bg-[#f4f4f5] text-zinc-700"
                               }`}
                             >
                               Tomorrow
@@ -607,10 +942,10 @@ export default function BakerPOSPage() {
                             <button
                               type="button"
                               onClick={() => setDeliveryDate(dayAfter)}
-                              className={`py-2 px-1 rounded-xl text-xs font-semibold transition-all text-center ${
+                              className={`py-2 rounded-xl text-xs font-semibold text-center ${
                                 deliveryDate === dayAfter
-                                  ? "bg-zinc-950 text-white shadow-xs"
-                                  : "bg-[#f4f4f5] text-zinc-700 hover:bg-zinc-200"
+                                  ? "bg-zinc-950 text-white"
+                                  : "bg-[#f4f4f5] text-zinc-700"
                               }`}
                             >
                               Day After
@@ -620,25 +955,17 @@ export default function BakerPOSPage() {
                       })()}
                     </div>
 
-                    <div className="pt-1 flex items-center gap-2">
-                      <span className="text-xs text-zinc-500 shrink-0">Or pick date:</span>
-                      <input
-                        type="date"
-                        value={deliveryDate}
-                        min={new Date().toISOString().split("T")[0]}
-                        onChange={(e) => setDeliveryDate(e.target.value)}
-                        className="flex-1 px-3 py-1.5 rounded-xl bg-[#f4f4f5] text-xs text-zinc-950 font-medium focus:outline-none"
-                      />
-                    </div>
+                    <input
+                      type="date"
+                      value={deliveryDate}
+                      min={new Date().toISOString().split("T")[0]}
+                      onChange={(e) => setDeliveryDate(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-[#f4f4f5] text-xs text-zinc-950 font-medium focus:outline-none"
+                    />
                   </div>
 
-                  {/* TIME SLOT PRESETS */}
-                  <div className="p-3.5 rounded-2xl bg-white space-y-2.5 text-left shadow-xs">
-                    <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block">
-                      Select Time Slot
-                    </span>
-
-                    <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1.5 text-left">
+                    <div className="grid grid-cols-2 gap-1.5">
                       {TIME_SLOTS.map((slot) => (
                         <button
                           key={slot}
@@ -647,10 +974,10 @@ export default function BakerPOSPage() {
                             setTimeSlot(slot);
                             setCustomTime("");
                           }}
-                          className={`py-2.5 px-2 rounded-xl text-xs font-medium transition-all text-center truncate ${
+                          className={`py-2 px-1 rounded-xl text-[11px] font-medium text-center truncate ${
                             timeSlot === slot && !customTime
-                              ? "bg-zinc-950 text-white font-semibold shadow-xs"
-                              : "bg-[#f4f4f5] text-zinc-800 hover:bg-zinc-200"
+                              ? "bg-zinc-950 text-white font-semibold"
+                              : "bg-[#f4f4f5] text-zinc-800"
                           }`}
                         >
                           {slot}
@@ -658,23 +985,19 @@ export default function BakerPOSPage() {
                       ))}
                     </div>
 
-                    {/* Custom Time Input */}
-                    <div className="pt-1 space-y-1">
-                      <input
-                        type="text"
-                        placeholder="Or custom time (e.g. 8:30 PM Party, 12 AM Midnight)"
-                        value={customTime}
-                        onChange={(e) => setCustomTime(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#f4f4f5] text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none font-medium"
-                      />
-                    </div>
+                    <input
+                      type="text"
+                      placeholder="Or custom time (e.g. 8:30 PM)"
+                      value={customTime}
+                      onChange={(e) => setCustomTime(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-[#f4f4f5] text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none font-medium"
+                    />
                   </div>
 
-                  {/* Finalize CTA Button */}
                   <button
                     type="button"
                     onClick={() => finalizeOrder()}
-                    className="w-full py-4 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-sm transition-all active:scale-[0.98] shadow-xs"
+                    className="w-full py-3.5 rounded-2xl bg-zinc-950 text-white font-semibold text-xs active:scale-95 transition-all shadow-xs"
                   >
                     Generate Order Link →
                   </button>
@@ -683,403 +1006,48 @@ export default function BakerPOSPage() {
 
               {/* STEP 5: FINAL READY LINK */}
               {step === 5 && createdOrder && (
-                <div className="space-y-5 text-center animate-in fade-in zoom-in-95 duration-200">
-                  <div className="w-12 h-12 rounded-full bg-white text-zinc-950 flex items-center justify-center mx-auto shadow-xs">
-                    <Check className="w-6 h-6" />
+                <div className="space-y-4 text-center animate-in fade-in duration-150">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto">
+                    <Check className="w-5 h-5" />
                   </div>
 
                   <div>
-                    <h2 className="text-2xl font-bold tracking-tight text-zinc-950">
+                    <h2 className="text-xl font-bold tracking-tight text-zinc-950">
                       Order #{createdOrder.order_number} Ready
                     </h2>
-                    <p className="text-xs text-zinc-500 mt-1">
+                    <p className="text-xs text-zinc-500 mt-0.5">
                       {createdOrder.weight} {createdOrder.flavour} • ₹{createdOrder.total_price}
                     </p>
                   </div>
 
-                  <div className="space-y-2.5 pt-2">
+                  <div className="space-y-2 pt-1">
                     <button
                       onClick={() => handleSendViaWhatsApp(createdOrder)}
-                      className="w-full py-4 rounded-2xl bg-zinc-950 text-white font-semibold text-sm hover:bg-zinc-800 transition-all active:scale-98 flex items-center justify-center gap-2"
+                      className="w-full py-3.5 rounded-2xl bg-zinc-950 text-white font-semibold text-xs flex items-center justify-center gap-2"
                     >
-                      <Send className="w-4 h-4" />
+                      <Send className="w-3.5 h-3.5" />
                       Send via WhatsApp
                     </button>
 
                     <button
                       onClick={() => handleCopyLink(createdOrder.order_number)}
-                      className="w-full py-3.5 rounded-2xl bg-white text-zinc-900 font-medium text-xs hover:bg-zinc-100 transition-all active:scale-98"
+                      className="w-full py-3 rounded-2xl bg-[#f4f4f5] text-zinc-900 font-semibold text-xs hover:bg-zinc-200"
                     >
-                      {copiedLink ? "Copied!" : "Copy Link"}
+                      {copiedLink ? "Copied!" : "Copy Booking Link"}
                     </button>
 
                     <button
                       onClick={handleCloseWizard}
-                      className="w-full py-3 text-xs font-medium text-zinc-400 hover:text-zinc-950 transition-colors"
+                      className="w-full py-2 text-xs font-semibold text-zinc-400 hover:text-zinc-950"
                     >
-                      Back to Orders
+                      Back to Kitchen
                     </button>
                   </div>
                 </div>
               )}
             </div>
-          )}
-        </header>
-
-        {/* =======================================================================
-            BOTTOM SHEET (ROLLS UP AS USER SCROLLS, STOPS AT TOP, HIDING BUTTON)
-            ======================================================================= */}
-        {!isCreating && (() => {
-          // Filter by status
-          const filteredOrders = orders.filter((o) => {
-            if (statusFilter === "all") return true;
-            return o.status === statusFilter;
-          });
-
-          // Group by date
-          const groupedOrders: { [date: string]: Order[] } = {};
-          filteredOrders.forEach((o) => {
-            const d = o.delivery_date || "Upcoming";
-            if (!groupedOrders[d]) groupedOrders[d] = [];
-            groupedOrders[d].push(o);
-          });
-
-          const sortedDates = Object.keys(groupedOrders).sort();
-
-          const getFriendlyDateHeader = (dateStr: string) => {
-            const today = new Date().toISOString().split("T")[0];
-            const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
-            
-            if (dateStr === today) return "Today";
-            if (dateStr === tomorrow) return "Tomorrow";
-            
-            try {
-              const d = new Date(dateStr);
-              return d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
-            } catch {
-              return dateStr;
-            }
-          };
-
-          const todayEarned = orders
-            .filter((o) => o.status === "completed")
-            .reduce((sum, o) => sum + o.total_price, 0);
-
-          return (
-            <section className="flex-1 min-h-[calc(100vh-60px)] bg-white rounded-t-[2.5rem] px-6 pt-3 pb-24 shadow-xs">
-              {/* STICKY SHEET HANDLE, TITLE & FILTERS */}
-              <div className="sticky top-0 bg-white z-20 pt-2 pb-3 space-y-2.5">
-                <div className="w-10 h-1 rounded-full bg-zinc-200 mx-auto" />
-                <div className="flex items-center justify-between px-1">
-                  <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                    Orders ({filteredOrders.length})
-                  </h2>
-                  <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full flex items-center gap-1">
-                    Earned Today: ₹{todayEarned.toLocaleString("en-IN")}
-                  </span>
-                </div>
-
-                {/* Status Filter Chips */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
-                  {[
-                    { key: "all", label: "All" },
-                    { key: "pending_token", label: "Waiting" },
-                    { key: "confirmed", label: "Baking" },
-                    { key: "baked", label: "Baked" },
-                    { key: "completed", label: "Success" },
-                  ].map((tab) => {
-                    const count =
-                      tab.key === "all"
-                        ? orders.length
-                        : orders.filter((o) => o.status === tab.key).length;
-                    const isActive = statusFilter === tab.key;
-                    return (
-                      <button
-                        key={tab.key}
-                        onClick={() => setStatusFilter(tab.key as any)}
-                        className={`px-3 py-1 rounded-full text-xs font-medium transition-all shrink-0 flex items-center gap-1.5 ${
-                          isActive
-                            ? "bg-zinc-950 text-white shadow-xs"
-                            : "bg-zinc-100 text-zinc-600 hover:text-zinc-950 hover:bg-zinc-200/60"
-                        }`}
-                      >
-                        <span>{tab.label}</span>
-                        <span
-                          className={`text-[10px] ${
-                            isActive ? "text-zinc-300" : "text-zinc-400"
-                          }`}
-                        >
-                          {count}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* ORDERS LIST GROUPED BY DATE */}
-              <div className="space-y-4 pt-1">
-                {isLoading ? (
-                  <div className="space-y-3">
-                    {[1, 2, 3].map((n) => (
-                      <div
-                        key={n}
-                        className="p-4 rounded-2xl bg-[#f4f4f5] animate-pulse space-y-3"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="h-4 w-32 bg-zinc-200 rounded-md" />
-                          <div className="h-4 w-16 bg-zinc-200 rounded-full" />
-                        </div>
-                        <div className="h-10 bg-white/70 rounded-xl" />
-                        <div className="flex justify-between">
-                          <div className="h-3 w-20 bg-zinc-200 rounded" />
-                          <div className="h-3 w-24 bg-zinc-200 rounded" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : filteredOrders.length === 0 ? (
-                  <div className="py-16 text-center space-y-2">
-                    <p className="text-sm font-medium text-zinc-950">
-                      No {statusFilter === "all" ? "" : statusFilter === "pending_token" ? "waiting" : statusFilter} orders
-                    </p>
-                    <p className="text-xs text-zinc-400">
-                      {statusFilter === "all"
-                        ? "Tap 'New Order' above to create your first link."
-                        : "No orders match this filter."}
-                    </p>
-                  </div>
-                ) : (
-                  sortedDates.map((dateKey) => (
-                    <div key={dateKey} className="space-y-3">
-                      {/* BREAK-EVEN DATE SEPARATOR */}
-                      <div className="flex items-center gap-3 py-1">
-                        <div className="h-[1px] flex-1 bg-zinc-100" />
-                        <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-zinc-100">
-                          {getFriendlyDateHeader(dateKey)}
-                        </span>
-                        <div className="h-[1px] flex-1 bg-zinc-100" />
-                      </div>
-
-                      {groupedOrders[dateKey].map((ord) =>
-                        ord.status === "pending_token" ? (
-                          /* COMPACT COLLAPSED CARD FOR WAITING ORDERS */
-                          <div
-                            key={ord.id}
-                            className="p-3.5 rounded-2xl bg-[#f4f4f5] flex items-center justify-between gap-3 transition-transform active:scale-[0.99] duration-150"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <div className="text-sm font-semibold text-zinc-950 truncate">
-                                {ord.order_number} • {ord.weight} {ord.flavour}
-                              </div>
-                              <div className="flex items-center gap-2 text-xs text-zinc-400 mt-0.5">
-                                <span>{ord.time_slot}</span>
-                                <span>•</span>
-                                <span className="font-medium text-zinc-700">₹{ord.total_price}</span>
-                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white text-zinc-600 font-medium">
-                                  Waiting ₹{ord.token_amount}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* WhatsApp Share Button */}
-                            <button
-                              onClick={() => handleSendViaWhatsApp(ord)}
-                              className="px-3 py-2 rounded-xl bg-white hover:bg-emerald-50 text-emerald-600 transition-colors active:scale-95 flex items-center justify-center shrink-0"
-                              title="Share on WhatsApp"
-                            >
-                              <svg className="w-4 h-4 fill-emerald-500" viewBox="0 0 24 24">
-                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                              </svg>
-                            </button>
-                          </div>
-                        ) : ord.status === "completed" ? (
-                          /* COMPACT COLLAPSED CARD FOR DELIVERED / COMPLETED ORDERS */
-                          <div
-                            key={ord.id}
-                            className="p-3.5 rounded-2xl bg-emerald-50/80 flex items-center justify-between gap-3 transition-transform active:scale-[0.99] duration-150"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <div className="text-sm font-semibold text-zinc-950 truncate">
-                                {ord.order_number} • {ord.weight} {ord.flavour}
-                              </div>
-                              <div className="flex items-center gap-2 text-xs text-emerald-800/80 mt-0.5">
-                                <span>{ord.time_slot}</span>
-                                <span>•</span>
-                                <span className="font-semibold text-emerald-950">₹{ord.total_price}</span>
-                                <span>•</span>
-                                <span>Paid ✓</span>
-                              </div>
-                            </div>
-
-                            <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 shrink-0">
-                              Delivered ✓
-                            </span>
-                          </div>
-                        ) : (
-                          /* FULL EXPANDED CARD FOR CONFIRMED / BAKED */
-                          <div
-                            key={ord.id}
-                            className="p-4 rounded-2xl bg-[#f4f4f5] space-y-3 transition-all active:scale-[0.99] duration-150"
-                          >
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <div className="text-sm font-semibold text-zinc-950">
-                                  {ord.order_number} • {ord.weight} {ord.flavour}
-                                </div>
-                                <div className="text-xs text-zinc-400 mt-0.5">
-                                  {ord.time_slot}
-                                </div>
-                              </div>
-
-                              <span className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-white text-zinc-700">
-                                {ord.status}
-                              </span>
-                            </div>
-
-                            {/* Customer & Fulfilment Details */}
-                            {ord.customer_name && (
-                              <div className="flex items-center justify-between text-xs px-1">
-                                <div className="text-zinc-700">
-                                  <span className="text-zinc-400">Customer: </span>
-                                  <span className="font-semibold text-zinc-950">
-                                    {ord.customer_name}
-                                  </span>
-                                  {ord.customer_phone && (
-                                    <a
-                                      href={`tel:${ord.customer_phone}`}
-                                      className="ml-2 text-zinc-500 hover:text-zinc-950 font-mono text-[11px] underline"
-                                      title="Click to call"
-                                    >
-                                      +{ord.customer_phone}
-                                    </a>
-                                  )}
-                                </div>
-                                <span className="text-[10px] font-semibold text-zinc-600 bg-white px-2 py-0.5 rounded-full">
-                                  {ord.fulfilment_type === "delivery" ? "Home Delivery" : "Self Pickup"}
-                                </span>
-                              </div>
-                            )}
-
-                            {/* Delivery Address (if home delivery) */}
-                            {ord.fulfilment_type === "delivery" && ord.delivery_address && (
-                              <div className="p-2.5 rounded-xl bg-white text-xs space-y-0.5">
-                                <div className="text-[10px] text-zinc-400 uppercase font-medium">
-                                  Delivery Address
-                                </div>
-                                <div className="text-zinc-950 font-medium">
-                                  {ord.delivery_address}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Cake Message Display */}
-                            <div className="p-3 rounded-xl bg-white text-xs space-y-0.5">
-                              <div className="text-[10px] text-zinc-400 uppercase font-medium">
-                                Text on Cake
-                              </div>
-                              <div className="font-medium text-zinc-950">
-                                {ord.cake_message ? `"${ord.cake_message}"` : "None (Plain Top)"}
-                              </div>
-                            </div>
-
-                            {/* Extra Add-on Items Display */}
-                            {ord.addons && ord.addons.length > 0 && (
-                              <div className="p-3 rounded-xl bg-white text-xs space-y-1.5">
-                                <div className="text-[10px] text-zinc-400 uppercase font-medium">
-                                  Extra Add-ons ({ord.addons.length})
-                                </div>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {ord.addons.map((a, i) => (
-                                    <span
-                                      key={i}
-                                      className="px-2.5 py-1 rounded-lg bg-[#f4f4f5] text-zinc-900 font-medium text-[11px]"
-                                    >
-                                      {a.name} (+₹{a.price})
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Multiple Customer Reference Photos (if attached) */}
-                            {((ord.reference_images && ord.reference_images.length > 0) || ord.reference_image) && (
-                              <div className="p-3 rounded-xl bg-white text-xs space-y-1.5">
-                                <div className="text-[10px] text-zinc-400 uppercase font-medium">
-                                  Reference Photos ({(ord.reference_images || [ord.reference_image]).length})
-                                </div>
-                                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                                  {(ord.reference_images || [ord.reference_image]).map((img, i) => (
-                                    <img
-                                      key={i}
-                                      src={img!}
-                                      alt="Reference"
-                                      className="w-16 h-16 rounded-lg object-cover bg-zinc-100 shrink-0 border border-zinc-200/60"
-                                    />
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Special Note */}
-                            {ord.special_notes && (
-                              <div className="p-2.5 rounded-xl bg-white text-xs space-y-0.5">
-                                <div className="text-[10px] text-zinc-400 uppercase font-medium">
-                                  Special Note
-                                </div>
-                                <div className="text-zinc-950 italic font-medium">
-                                  "{ord.special_notes}"
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Financial Summary */}
-                            <div className="flex items-center justify-between text-xs text-zinc-600 px-0.5">
-                              <span>Total: ₹{ord.total_price}</span>
-                              <span className="font-semibold text-zinc-950">
-                                Balance: ₹{ord.balance_amount}
-                              </span>
-                            </div>
-
-                            {/* Status Actions */}
-                            <div className="pt-1 flex gap-2">
-                              {ord.status !== "baked" && (
-                                <MovingBorderButton
-                                  onClick={() => updateOrderStatus(ord.id, "baked")}
-                                  containerClassName="flex-1 h-9"
-                                  className="bg-white text-zinc-950 font-medium text-xs hover:bg-zinc-50"
-                                >
-                                  Mark Baked
-                                </MovingBorderButton>
-                              )}
-                              {ord.status === "baked" && (
-                                <button
-                                  onClick={() => updateOrderStatus(ord.id, "completed")}
-                                  className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors active:scale-95 shadow-xs"
-                                >
-                                  Collected ✓
-                                </button>
-                              )}
-                              <button
-                                onClick={() => handleSendViaWhatsApp(ord)}
-                                className="px-3 py-2 rounded-xl bg-white hover:bg-emerald-50 text-emerald-600 transition-colors active:scale-95 flex items-center justify-center shrink-0"
-                                title="Share on WhatsApp"
-                              >
-                                <svg className="w-4 h-4 fill-emerald-500" viewBox="0 0 24 24">
-                                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                                </svg>
-                              </button>
-                            </div>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
-          );
-        })()}
+          </div>
+        )}
       </div>
     </div>
   );

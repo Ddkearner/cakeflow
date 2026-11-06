@@ -853,16 +853,6 @@ export default function CustomerCheckoutPage() {
                   );
                 })}
               </div>
-
-              <div className="pt-2 border-t border-zinc-200/60">
-                <input
-                  type="text"
-                  placeholder="Candle numbers or special requests (optional)"
-                  value={specialNotes}
-                  onChange={(e) => setSpecialNotes(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none font-medium"
-                />
-              </div>
             </div>
 
             {/* Order Price Ledger */}
