@@ -269,32 +269,34 @@ export default function CustomerCheckoutPage() {
   return (
     <div className="min-h-[100dvh] bg-white text-zinc-950 flex flex-col justify-between max-w-md mx-auto relative overflow-x-hidden selection:bg-zinc-200">
       {/* =======================================================================
-          TOP BAR (MINIMALIST BRANDING)
+          TOP BAR (MINIMALIST BRANDING) - ONLY ON CHECKOUT FORM
           ======================================================================= */}
-      <header className="px-5 pt-4 pb-3 border-b border-zinc-100 bg-white sticky top-0 z-20 print:hidden flex items-center justify-between">
-        <div className="min-w-0 pr-2">
-          <div className="flex items-center gap-1.5">
-            <h1 className="text-sm font-bold text-zinc-950 tracking-tight truncate">
-              {baker.name}
-            </h1>
-            <span className="w-3.5 h-3.5 rounded-full bg-zinc-950 text-white flex items-center justify-center text-[8px] font-bold shrink-0">
-              ✓
-            </span>
+      {!isPaid && (
+        <header className="px-5 pt-4 pb-3 border-b border-zinc-100 bg-white sticky top-0 z-20 print:hidden flex items-center justify-between">
+          <div className="min-w-0 pr-2">
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-sm font-bold text-zinc-950 tracking-tight truncate">
+                {baker.name}
+              </h1>
+              <span className="w-3.5 h-3.5 rounded-full bg-zinc-950 text-white flex items-center justify-center text-[8px] font-bold shrink-0">
+                ✓
+              </span>
+            </div>
+            <p className="text-[11px] text-zinc-400 truncate mt-0.5">
+              {baker.pickup_address}
+            </p>
           </div>
-          <p className="text-[11px] text-zinc-400 truncate mt-0.5">
-            {baker.pickup_address}
-          </p>
-        </div>
 
-        <span className="px-2.5 py-1 rounded-full bg-[#f4f4f5] text-[11px] font-semibold text-zinc-700 shrink-0 font-mono">
-          #{order.order_number}
-        </span>
-      </header>
+          <span className="px-2.5 py-1 rounded-full bg-[#f4f4f5] text-[11px] font-semibold text-zinc-700 shrink-0 font-mono">
+            #{order.order_number}
+          </span>
+        </header>
+      )}
 
       {/* =======================================================================
           MAIN CONTENT AREA
           ======================================================================= */}
-      <main className="flex-1 px-4 pt-3.5 pb-28">
+      <main className={`flex-1 px-4 ${isPaid ? "pt-6 pb-12" : "pt-3.5 pb-28"}`}>
         {isPaid ? (
           /* ===================================================================
               VIEW: DELIGHTFUL PAYMENT SUCCESS & DIGITAL BOOKING PASS
