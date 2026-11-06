@@ -24,6 +24,7 @@ import {
   Clock,
   Phone,
   MapPin,
+  Download,
 } from "lucide-react";
 import { RainbowButton } from "@/components/ui/rainbow-button";
 import { MovingBorderButton } from "@/components/ui/moving-border";
@@ -71,6 +72,7 @@ export default function BakerPOSPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
+  const [proofOrder, setProofOrder] = useState<Order | null>(null);
 
   // Quick Order Preset Fields
   const [weight, setWeight] = useState("1 Kg");
@@ -402,12 +404,13 @@ export default function BakerPOSPage() {
             </div>
           ) : (
             displayedOrders.map((ord) => {
-              // 1. COLLAPSED VIEW FOR DELIVERED ORDERS
+              // 1. COLLAPSED VIEW FOR DELIVERED ORDERS (CLICK FOR FULL PROOF)
               if (ord.status === "completed") {
                 return (
                   <div
                     key={ord.id}
-                    className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-100/50 flex items-center justify-between gap-3 transition-transform active:scale-[0.99]"
+                    onClick={() => setProofOrder(ord)}
+                    className="p-3.5 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100/70 border border-emerald-100/50 flex items-center justify-between gap-3 transition-all active:scale-[0.99] cursor-pointer"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-bold text-zinc-950 truncate">
@@ -421,9 +424,12 @@ export default function BakerPOSPage() {
                         <span className="font-semibold text-emerald-950">₹{ord.total_price}</span>
                       </div>
                     </div>
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 shrink-0">
-                      Delivered ✓
-                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                        Delivered ✓
+                      </span>
+                      <span className="text-[11px] font-bold text-emerald-700">Proof →</span>
+                    </div>
                   </div>
                 );
               }
@@ -495,48 +501,28 @@ export default function BakerPOSPage() {
                     </span>
                   </div>
 
-                  {/* Customer & Fulfilment Details Block */}
+                  {/* Customer Information (Flat, Plain & Never Truncated) */}
                   {(ord.customer_name || ord.customer_phone || ord.delivery_address) && (
-                    <div className="p-3 rounded-xl bg-white border border-zinc-200/60 text-xs space-y-2">
-                      {/* Row 1: Customer Name & Direct Call Button */}
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="font-bold text-zinc-950 text-sm truncate">
-                            {ord.customer_name || "Customer"}
-                          </span>
-                          {ord.customer_phone && (
-                            <a
-                              href={`tel:${ord.customer_phone}`}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 font-mono text-[11px] font-semibold hover:bg-emerald-100 transition-colors shrink-0"
-                              title="Call customer"
-                            >
-                              <Phone className="w-3 h-3 text-emerald-600" />
-                              <span>+{ord.customer_phone}</span>
-                            </a>
-                          )}
-                        </div>
-
-                        {/* Fulfilment Badge */}
-                        <span
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shrink-0 ${
-                            ord.fulfilment_type === "delivery"
-                              ? "bg-purple-50 text-purple-800 border border-purple-200/50"
-                              : "bg-zinc-100 text-zinc-700"
-                          }`}
-                        >
-                          {ord.fulfilment_type === "delivery" ? "Home Delivery" : "Store Pickup"}
-                        </span>
+                    <div className="text-xs space-y-1 pt-1.5 border-t border-zinc-200/60">
+                      <div className="font-bold text-zinc-950 text-sm">
+                        {ord.customer_name || "Customer"}
                       </div>
-
-                      {/* Row 2: Delivery Address (Only if Delivery) */}
-                      {ord.fulfilment_type === "delivery" && ord.delivery_address && (
-                        <div className="flex items-start gap-1.5 pt-1.5 border-t border-zinc-100 text-zinc-700 text-xs">
-                          <MapPin className="w-3.5 h-3.5 text-zinc-400 shrink-0 mt-0.5" />
-                          <span className="font-medium text-zinc-900 leading-snug">
-                            {ord.delivery_address}
-                          </span>
+                      {ord.customer_phone && (
+                        <div>
+                          <a
+                            href={`tel:${ord.customer_phone}`}
+                            className="text-zinc-600 font-mono text-xs hover:text-zinc-950 underline inline-flex items-center gap-1"
+                          >
+                            <Phone className="w-3 h-3 text-zinc-400" />
+                            <span>+{ord.customer_phone}</span>
+                          </a>
                         </div>
                       )}
+                      <div className="text-zinc-600 text-xs">
+                        {ord.fulfilment_type === "delivery"
+                          ? `Address: ${ord.delivery_address || "Address provided"}`
+                          : "Self Pickup (Store)"}
+                      </div>
                     </div>
                   )}
 
@@ -858,6 +844,173 @@ export default function BakerPOSPage() {
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        )}
+        {/* =======================================================================
+            OFFICIAL ORDER PROOF / AUDIT RECORD MODAL (FOR DELIVERED ORDERS)
+            ======================================================================= */}
+        {proofOrder && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-2xl relative overflow-hidden">
+              {/* Header */}
+              <div className="px-5 py-4 border-b border-zinc-100 flex items-center justify-between bg-white shrink-0">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-zinc-950">
+                      Order Booking Proof
+                    </h2>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800">
+                      #{proofOrder.order_number}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">
+                    Official booking & payment audit trail
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setProofOrder(null)}
+                  className="w-8 h-8 rounded-full bg-[#f4f4f5] hover:bg-zinc-200 text-zinc-600 flex items-center justify-center transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Scrollable Audit Sheet */}
+              <div id="proof-sheet" className="flex-1 overflow-y-auto px-5 py-4 space-y-3.5 text-xs">
+                {/* Status Banner */}
+                <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-900 flex items-center justify-between">
+                  <div className="flex items-center gap-2 font-bold text-xs">
+                    <Check className="w-4 h-4 text-emerald-700" />
+                    <span>Delivered & Fully Paid</span>
+                  </div>
+                  <span className="text-[10px] font-semibold text-emerald-700">
+                    {getFriendlyDateHeader(proofOrder.delivery_date)}
+                  </span>
+                </div>
+
+                {/* Cake Specification */}
+                <div className="p-3.5 rounded-2xl bg-[#f4f4f5] space-y-1.5">
+                  <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">
+                    Cake Specification
+                  </span>
+                  <div className="text-base font-bold text-zinc-950">
+                    {proofOrder.weight} {proofOrder.flavour}
+                  </div>
+                  <div className="text-zinc-600">
+                    {proofOrder.is_eggless ? "100% Eggless" : "With Egg"} • Slot: {proofOrder.time_slot}
+                  </div>
+                </div>
+
+                {/* Customer & Address Details */}
+                <div className="p-3.5 rounded-2xl bg-[#f4f4f5] space-y-1.5">
+                  <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">
+                    Customer Information
+                  </span>
+                  <div className="font-bold text-zinc-950 text-sm">
+                    {proofOrder.customer_name || "Customer"}
+                  </div>
+                  {proofOrder.customer_phone && (
+                    <div className="font-mono text-zinc-600">
+                      Phone: +{proofOrder.customer_phone}
+                    </div>
+                  )}
+                  <div className="text-zinc-700 pt-0.5">
+                    {proofOrder.fulfilment_type === "delivery"
+                      ? `Delivery Address: ${proofOrder.delivery_address || "Provided to baker"}`
+                      : `Pickup Address: ${baker.pickup_address}`}
+                  </div>
+                </div>
+
+                {/* Text on Cake (Piped) */}
+                <div className="p-3.5 rounded-2xl bg-[#f4f4f5] space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">
+                    Text on Cake (Piped)
+                  </span>
+                  <p className="font-bold text-zinc-950 italic text-sm">
+                    {isValidCakeMessage(proofOrder.cake_message)
+                      ? `"${proofOrder.cake_message}"`
+                      : "None (Plain Top / No text requested)"}
+                  </p>
+                </div>
+
+                {/* Reference Design Photos */}
+                {((proofOrder.reference_images && proofOrder.reference_images.length > 0) || proofOrder.reference_image) && (
+                  <div className="p-3.5 rounded-2xl bg-[#f4f4f5] space-y-2">
+                    <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">
+                      Customer Reference Photos
+                    </span>
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                      {(proofOrder.reference_images || [proofOrder.reference_image]).map((img, i) => (
+                        <img
+                          key={i}
+                          src={img!}
+                          alt="Customer Design"
+                          className="w-20 h-20 rounded-xl object-cover bg-white shrink-0 border border-zinc-200"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Add-on Items */}
+                {proofOrder.addons && proofOrder.addons.length > 0 && (
+                  <div className="p-3.5 rounded-2xl bg-[#f4f4f5] space-y-1.5">
+                    <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">
+                      Party Add-ons
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {proofOrder.addons.map((a, i) => (
+                        <span
+                          key={i}
+                          className="px-2.5 py-1 rounded-lg bg-white text-zinc-900 font-semibold text-xs border border-zinc-200/50"
+                        >
+                          {a.name} (+₹{a.price})
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Financial Ledger */}
+                <div className="p-3.5 rounded-2xl bg-[#f4f4f5] space-y-2">
+                  <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">
+                    Payment Ledger Proof
+                  </span>
+                  <div className="flex justify-between text-zinc-600">
+                    <span>Total Cake & Order Value:</span>
+                    <span className="font-bold text-zinc-950">₹{proofOrder.total_price}</span>
+                  </div>
+                  <div className="flex justify-between text-emerald-800">
+                    <span>Token Advance (Paid via UPI):</span>
+                    <span className="font-bold">₹{proofOrder.token_amount} ✓</span>
+                  </div>
+                  <div className="flex justify-between text-zinc-950 border-t border-zinc-200 pt-1 font-bold">
+                    <span>Balance Settled at Handover:</span>
+                    <span>₹{proofOrder.balance_amount} ✓</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer Actions */}
+              <div className="p-4 border-t border-zinc-100 bg-white space-y-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="w-full py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs flex items-center justify-center gap-2 active:scale-98 shadow-xs"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download / Print Proof PDF</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProofOrder(null)}
+                  className="w-full py-2 text-xs font-semibold text-zinc-400 hover:text-zinc-950"
+                >
+                  Close Proof
+                </button>
+              </div>
             </div>
           </div>
         )}
