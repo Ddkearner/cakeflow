@@ -869,9 +869,6 @@ export default function BakerPOSPage() {
             </div>
           </div>
         )}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
