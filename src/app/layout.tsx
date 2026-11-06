@@ -2,9 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CakeFlow",
-  description: "Cake order management",
+  title: "CakeFlow - Cake Booking & Token Advance",
+  description: "Cake Booking & Token Advance",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -27,6 +31,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icon.svg" />
+      </head>
       <body className="bg-white text-zinc-900 min-h-screen antialiased">
         {children}
       </body>

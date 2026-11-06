@@ -83,12 +83,6 @@ export default function BakerPOSPage() {
   const [timeSlot, setTimeSlot] = useState("6:00 PM - 7:00 PM");
   const [customTime, setCustomTime] = useState("");
 
-  // Swipe to Refresh (Pull down) State
-  const [pullY, setPullY] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const touchStartY = useRef(0);
-  const isPulling = useRef(false);
-
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get("token");
@@ -162,49 +156,6 @@ export default function BakerPOSPage() {
       window.removeEventListener("focus", handleFocus);
     };
   }, [baker]);
-
-  // 2. SWIPE / PULL TO REFRESH HANDLERS (Mobile + Touch)
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (isCreating) return;
-    const scrollPos = window.scrollY || document.documentElement.scrollTop;
-    if (scrollPos > 10) return;
-    touchStartY.current = e.touches[0].clientY;
-    isPulling.current = true;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isPulling.current || isCreating) return;
-    const scrollPos = window.scrollY || document.documentElement.scrollTop;
-    const currentY = e.touches[0].clientY;
-    const diff = currentY - touchStartY.current;
-
-    if (diff > 0 && scrollPos <= 10) {
-      const pull = Math.min(85, diff * 0.45);
-      setPullY(pull);
-    } else {
-      setPullY(0);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (!isPulling.current) return;
-    isPulling.current = false;
-
-    if (pullY >= 48) {
-      setIsRefreshing(true);
-      setPullY(52);
-      if (baker) {
-        const all = getLocalOrders();
-        setOrders(all.filter((o) => o.baker_id === baker.id));
-      }
-      setTimeout(() => {
-        setIsRefreshing(false);
-        setPullY(0);
-      }, 650);
-    } else {
-      setPullY(0);
-    }
-  };
 
   const handleStartNewOrder = () => {
     setWeight("1 Kg");
@@ -338,45 +289,8 @@ export default function BakerPOSPage() {
   };
 
   return (
-    <div
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      className="min-h-screen bg-white text-zinc-950 selection:bg-zinc-200 relative overflow-x-hidden"
-    >
-      {/* =======================================================================
-          SWIPE TO REFRESH FLOATING INDICATOR PILL
-          ======================================================================= */}
-      <div
-        className={`fixed top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-200 ${
-          pullY > 0 || isRefreshing ? "opacity-100 translate-y-0 scale-100" : "opacity-0 -translate-y-4 scale-95"
-        }`}
-      >
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white shadow-lg border border-zinc-200/80 text-xs font-semibold text-zinc-800">
-          <RotateCw
-            className={`w-3.5 h-3.5 text-zinc-800 ${
-              isRefreshing ? "animate-spin" : ""
-            }`}
-            style={{
-              transform: !isRefreshing ? `rotate(${pullY * 5}deg)` : undefined,
-            }}
-          />
-          <span>
-            {isRefreshing
-              ? "Updating orders..."
-              : pullY >= 48
-              ? "Release to refresh"
-              : "Pull to refresh"}
-          </span>
-        </div>
-      </div>
-
-      <div
-        className="max-w-xl mx-auto min-h-screen flex flex-col relative transition-transform duration-150 ease-out"
-        style={{
-          transform: pullY > 0 ? `translateY(${pullY * 0.4}px)` : undefined,
-        }}
-      >
+    <div className="min-h-screen bg-white text-zinc-950 selection:bg-zinc-200 relative overflow-x-hidden">
+      <div className="max-w-xl mx-auto min-h-screen flex flex-col relative">
         {/* =======================================================================
             COMPACT HIGH-UTILITY TOP APP BAR (SINGLE ROW - ZERO SCREEN WASTE)
             ======================================================================= */}
