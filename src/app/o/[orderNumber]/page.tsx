@@ -14,18 +14,13 @@ import {
 } from "@/lib/utils";
 import {
   Check,
-  ChevronDown,
-  ChevronUp,
   MapPin,
   Copy,
   QrCode,
   ShieldCheck,
   ExternalLink,
-  ArrowLeft,
-  ArrowRight,
   Camera,
   X,
-  Sparkles,
   Plus,
   Download,
 } from "lucide-react";
@@ -46,10 +41,9 @@ export default function CustomerCheckoutPage() {
 
   const [order, setOrder] = useState<Order | null>(null);
   const [baker, setBaker] = useState<Baker | null>(null);
-  const [step, setStep] = useState<1 | 2 | 3>(1); // 1: Cake & Message, 2: Reference & Contact, 3: Fulfilment & Pay
   const [isLoading, setIsLoading] = useState(true);
 
-  // Form Fields
+  // Clean Single-Page Form Fields
   const [cakeMessage, setCakeMessage] = useState("");
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [customerName, setCustomerName] = useState("");
@@ -59,7 +53,6 @@ export default function CustomerCheckoutPage() {
   const [selectedAddons, setSelectedAddons] = useState<
     Array<{ id: string; name: string; price: number }>
   >([]);
-  const [specialNotes, setSpecialNotes] = useState("");
 
   // Payment & Modal States
   const [isPaid, setIsPaid] = useState(false);
@@ -88,7 +81,6 @@ export default function CustomerCheckoutPage() {
       setCustomerPhone(found.customer_phone || "");
       setFulfilmentType(found.fulfilment_type || "pickup");
       setDeliveryAddress(found.delivery_address || "");
-      setSpecialNotes(found.special_notes || "");
       if (
         found.status === "confirmed" ||
         found.status === "baked" ||
@@ -184,7 +176,6 @@ export default function CustomerCheckoutPage() {
       fulfilment_type: fulfilmentType,
       delivery_address:
         fulfilmentType === "delivery" ? deliveryAddress.trim() : undefined,
-      special_notes: specialNotes.trim() || undefined,
       status: "confirmed",
     };
 
@@ -232,7 +223,6 @@ export default function CustomerCheckoutPage() {
   if (isLoading) {
     return (
       <main className="max-w-md mx-auto min-h-[100dvh] bg-white px-5 pt-5 pb-10 space-y-4">
-        {/* Header Shimmer */}
         <div className="pb-4 border-b border-zinc-100 flex items-center justify-between">
           <div className="space-y-1.5">
             <div className="h-5 w-32 rounded-lg animate-shimmer" />
@@ -241,17 +231,6 @@ export default function CustomerCheckoutPage() {
           <div className="h-7 w-20 rounded-full animate-shimmer" />
         </div>
 
-        {/* Step Indicator Shimmer */}
-        <div className="space-y-2 pt-1">
-          <div className="grid grid-cols-3 gap-2">
-            <div className="h-1.5 rounded-full animate-shimmer" />
-            <div className="h-1.5 rounded-full bg-zinc-100" />
-            <div className="h-1.5 rounded-full bg-zinc-100" />
-          </div>
-          <div className="h-3 w-28 rounded animate-shimmer" />
-        </div>
-
-        {/* Hero Card Shimmer */}
         <div className="p-5 rounded-2xl bg-[#f4f4f5] space-y-4">
           <div className="flex items-start justify-between">
             <div className="space-y-2">
@@ -267,14 +246,11 @@ export default function CustomerCheckoutPage() {
           </div>
         </div>
 
-        {/* Input Card Shimmer */}
-        <div className="p-5 rounded-2xl bg-[#f4f4f5] space-y-3">
-          <div className="h-4 w-48 rounded animate-shimmer" />
-          <div className="h-12 w-full rounded-xl bg-white animate-pulse" />
-          <div className="h-4 w-32 rounded animate-shimmer" />
+        <div className="p-4 rounded-2xl bg-[#f4f4f5] space-y-3">
+          <div className="h-4 w-36 rounded animate-shimmer" />
+          <div className="h-11 w-full rounded-xl bg-white animate-pulse" />
         </div>
 
-        {/* Bottom Button Shimmer */}
         <div className="pt-8">
           <div className="h-13 w-full rounded-2xl animate-shimmer" />
         </div>
@@ -312,70 +288,37 @@ export default function CustomerCheckoutPage() {
     <div className="min-h-[100dvh] bg-white text-zinc-950 flex flex-col justify-between max-w-md mx-auto relative overflow-x-hidden selection:bg-zinc-200">
       
       {/* =======================================================================
-          TOP APP BAR (NATIVE MOBILE FEEL)
+          TOP APP BAR (NATIVE MOBILE FEEL - ZERO WIZARD NOISE)
           ======================================================================= */}
-      <header className="px-5 pt-5 pb-3 border-b border-zinc-100 bg-white sticky top-0 z-20 print:hidden space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="min-w-0 pr-2">
-            <div className="flex items-center gap-1.5">
-              <h1 className="text-base font-bold text-zinc-950 tracking-tight truncate">
-                {baker.name}
-              </h1>
-              <span className="w-4 h-4 rounded-full bg-zinc-950 text-white flex items-center justify-center text-[9px] font-bold shrink-0">
-                ✓
-              </span>
-            </div>
-            <p className="text-xs text-zinc-500 truncate mt-0.5">
-              {baker.pickup_address}
-            </p>
+      <header className="px-5 pt-5 pb-3 border-b border-zinc-100 bg-white sticky top-0 z-20 print:hidden flex items-center justify-between">
+        <div className="min-w-0 pr-2">
+          <div className="flex items-center gap-1.5">
+            <h1 className="text-base font-bold text-zinc-950 tracking-tight truncate">
+              {baker.name}
+            </h1>
+            <span className="w-4 h-4 rounded-full bg-zinc-950 text-white flex items-center justify-center text-[9px] font-bold shrink-0">
+              ✓
+            </span>
           </div>
-
-          <span className="px-3 py-1 rounded-full bg-[#f4f4f5] text-xs font-semibold text-zinc-800 shrink-0 font-mono">
-            #{order.order_number}
-          </span>
+          <p className="text-xs text-zinc-500 truncate mt-0.5">
+            {baker.pickup_address}
+          </p>
         </div>
 
-        {/* 3-SEGMENT PROGRESS BAR (NEVER WRAPS ON MOBILE) */}
-        {!isPaid && (
-          <div className="space-y-1.5 pt-0.5">
-            <div className="grid grid-cols-3 gap-1.5">
-              <div
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  step >= 1 ? "bg-zinc-950" : "bg-zinc-200"
-                }`}
-              />
-              <div
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  step >= 2 ? "bg-zinc-950" : "bg-zinc-200"
-                }`}
-              />
-              <div
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  step >= 3 ? "bg-zinc-950" : "bg-zinc-200"
-                }`}
-              />
-            </div>
-            <div className="flex items-center justify-between text-[11px] font-medium text-zinc-500">
-              <span>
-                {step === 1 && "Step 1: Cake & Message"}
-                {step === 2 && "Step 2: Reference & Contact"}
-                {step === 3 && "Step 3: Fulfilment & Payment"}
-              </span>
-              <span className="text-zinc-400 font-mono">{step} of 3</span>
-            </div>
-          </div>
-        )}
+        <span className="px-3 py-1 rounded-full bg-[#f4f4f5] text-xs font-semibold text-zinc-800 shrink-0 font-mono">
+          #{order.order_number}
+        </span>
       </header>
 
       {/* =======================================================================
-          MAIN CONTENT AREA (SCROLLABLE WITH EXTRA PADDING FOR STICKY BOTTOM BAR)
+          MAIN CONTENT AREA (SCROLLABLE SINGLE-PAGE ZERO-COGNITIVE CHECKOUT)
           ======================================================================= */}
       <main className="flex-1 px-5 pt-3 pb-32">
         {isPaid ? (
           /* ===================================================================
-              VIEW 1: CONFIRMED LUXURY RECEIPT VOUCHER (AFTER TOKEN PAYMENT)
+              VIEW: CONFIRMED LUXURY RECEIPT VOUCHER (AFTER TOKEN PAYMENT)
               =================================================================== */
-          <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div
               id="receipt-voucher"
               className="p-5 rounded-3xl bg-emerald-50/80 space-y-4 border border-emerald-100/60 print:border-none print:p-0"
@@ -408,17 +351,19 @@ export default function CustomerCheckoutPage() {
                 </p>
               </div>
 
-              {/* Cake Message Display Box */}
-              <div className="p-3.5 rounded-2xl bg-white space-y-1">
-                <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider">
-                  Text on Cake
-                </span>
-                <p className="text-sm font-semibold text-zinc-950 italic">
-                  {order.cake_message ? `"${order.cake_message}"` : "None (Plain Top)"}
-                </p>
-              </div>
+              {/* Cake Message (ONLY IF PRESENT) */}
+              {order.cake_message && order.cake_message.trim() && (
+                <div className="p-3.5 rounded-2xl bg-white space-y-1">
+                  <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider">
+                    Text on Cake
+                  </span>
+                  <p className="text-sm font-semibold text-zinc-950 italic">
+                    "{order.cake_message}"
+                  </p>
+                </div>
+              )}
 
-              {/* Multiple Reference Images Gallery */}
+              {/* Reference Images Gallery */}
               {referenceImages.length > 0 && (
                 <div className="p-3.5 rounded-2xl bg-white space-y-2">
                   <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider block">
@@ -534,122 +479,82 @@ export default function CustomerCheckoutPage() {
               </button>
             </div>
           </div>
-        ) : step === 1 ? (
+        ) : (
           /* ===================================================================
-              STEP 1: CAKE PREVIEW + "MESSAGE ON CAKE"
+              VIEW: ULTRA-LEAN 1-PAGE CHECKOUT (ZERO COGNITIVE LOAD)
               =================================================================== */
-          <div className="space-y-4 animate-in fade-in duration-200">
-            {/* Hero Cake Spec Card */}
-            <div className="p-4 rounded-2xl bg-[#f4f4f5] space-y-3">
+          <div className="space-y-3.5 animate-in fade-in duration-200">
+            {/* 1. Reserved Cake Hero */}
+            <div className="p-4 rounded-2xl bg-[#f4f4f5] space-y-2.5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block">
-                    Reserved Cake
-                  </span>
-                  <h2 className="text-lg font-bold text-zinc-950 mt-0.5 truncate">
+                  <h2 className="text-lg font-bold text-zinc-950 truncate">
                     {order.weight} {order.flavour}
                   </h2>
                   <p className="text-xs text-zinc-500 mt-0.5">
                     {order.is_eggless ? "100% Eggless" : "With Egg"} • {order.time_slot}
                   </p>
                 </div>
-
                 <div className="text-right shrink-0">
-                  <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block">
-                    Total
-                  </span>
-                  <div className="text-lg font-bold text-zinc-950">
-                    ₹{order.total_price}
-                  </div>
+                  <div className="text-lg font-bold text-zinc-950">₹{finalTotalPrice}</div>
+                  <span className="text-[10px] text-zinc-400 font-medium">Total</span>
                 </div>
               </div>
-
-              <div className="pt-2.5 border-t border-zinc-200/60 flex items-center justify-between text-xs text-zinc-600">
-                <span>Advance to lock slot:</span>
-                <span className="font-bold text-zinc-950">₹{order.token_amount}</span>
+              <div className="pt-2 border-t border-zinc-200/60 flex items-center justify-between text-xs text-zinc-600">
+                <span>Advance to book:</span>
+                <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                  ₹{tokenAmount}
+                </span>
               </div>
             </div>
 
-            {/* Message on Cake Card */}
-            <div className="p-4 rounded-2xl bg-[#f4f4f5] space-y-3">
-              <div>
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-bold text-zinc-950">
-                    Write a message on the cake?
-                  </label>
-                  <span className="text-[10px] text-zinc-400">
-                    {cakeMessage.length}/35
-                  </span>
-                </div>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  Leave blank if you prefer a clean plain top.
-                </p>
-              </div>
-
+            {/* 2. Message on Cake Input (Clean & Direct) */}
+            <div className="p-4 rounded-2xl bg-[#f4f4f5] space-y-2.5">
+              <label className="text-xs font-semibold text-zinc-950 block">
+                Message on Cake <span className="text-zinc-400 font-normal">(optional)</span>
+              </label>
               <input
                 type="text"
                 maxLength={35}
-                placeholder="e.g. Happy Birthday Aarav!"
+                placeholder="e.g. Happy Birthday Rohan"
                 value={cakeMessage}
                 onChange={(e) => setCakeMessage(e.target.value)}
-                className="w-full px-4 py-3.5 rounded-xl bg-white text-zinc-950 text-[16px] sm:text-sm placeholder-zinc-400 focus:outline-none font-medium"
+                className="w-full px-3.5 py-3 rounded-xl bg-white text-zinc-950 text-[16px] sm:text-sm placeholder-zinc-400 focus:outline-none font-medium"
               />
-
-              {/* Live Visual Ribbon Preview */}
-              <div className="pt-0.5 flex items-center gap-2 text-xs">
-                <span className="text-[10px] uppercase font-semibold text-zinc-400 shrink-0">
-                  Preview:
-                </span>
-                <span className="px-3 py-1 rounded-lg bg-white text-zinc-950 font-semibold italic text-xs truncate max-w-[200px]">
-                  {cakeMessage.trim() ? `"${cakeMessage.trim()}"` : "Plain Top (No Text)"}
-                </span>
-              </div>
-
-              {/* Quick Helper Chips */}
-              <div className="flex items-center gap-1.5 pt-1 overflow-x-auto scrollbar-none text-xs">
-                {["Happy Birthday", "Happy Anniversary", "Best Wishes"].map(
-                  (preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setCakeMessage(preset)}
-                      className="px-2.5 py-1 rounded-lg bg-white hover:bg-zinc-100 text-zinc-700 text-[11px] font-medium transition-colors shrink-0"
-                    >
-                      +{preset}
-                    </button>
-                  )
-                )}
+              <div className="flex items-center gap-1.5 pt-0.5 overflow-x-auto scrollbar-none text-xs">
+                {["Happy Birthday", "Happy Anniversary", "Best Wishes"].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setCakeMessage(preset)}
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-zinc-100 text-zinc-700 text-[11px] font-medium transition-colors shrink-0 active:scale-95"
+                  >
+                    +{preset}
+                  </button>
+                ))}
                 {cakeMessage && (
                   <button
                     type="button"
                     onClick={() => setCakeMessage("")}
-                    className="px-2.5 py-1 rounded-lg bg-zinc-200/70 hover:bg-zinc-200 text-zinc-600 text-[11px] font-medium transition-colors shrink-0"
+                    className="px-2.5 py-1 rounded-lg bg-zinc-200/70 text-zinc-600 text-[11px] font-medium transition-colors shrink-0"
                   >
                     Clear
                   </button>
                 )}
               </div>
             </div>
-          </div>
-        ) : step === 2 ? (
-          /* ===================================================================
-              STEP 2: MULTIPLE REFERENCE DESIGN PHOTOS + CONTACT DETAILS
-              =================================================================== */
-          <div className="space-y-4 animate-in fade-in slide-in-from-right-3 duration-200">
-            {/* Multiple Reference Photos Card */}
-            <div className="p-4 rounded-2xl bg-[#f4f4f5] space-y-3">
+
+            {/* 3. Reference Design Photo (Compact & Clean) */}
+            <div className="p-4 rounded-2xl bg-[#f4f4f5] space-y-2.5">
               <div className="flex items-center justify-between">
-                <div>
-                  <label className="text-sm font-bold text-zinc-950 block">
-                    Reference Design Photos
-                  </label>
-                  <p className="text-xs text-zinc-500 mt-0.5">
-                    Attach cake design or theme ideas (up to 4).
-                  </p>
-                </div>
-                <span className="text-[10px] font-medium text-zinc-400 bg-white px-2 py-0.5 rounded-full shrink-0">
-                  Optional
-                </span>
+                <label className="text-xs font-semibold text-zinc-950 block">
+                  Reference Photo <span className="text-zinc-400 font-normal">(optional)</span>
+                </label>
+                {referenceImages.length > 0 && (
+                  <span className="text-[10px] text-zinc-500 font-medium">
+                    {referenceImages.length}/4
+                  </span>
+                )}
               </div>
 
               <input
@@ -661,112 +566,86 @@ export default function CustomerCheckoutPage() {
                 onChange={handleImageChange}
               />
 
-              {referenceImages.length > 0 && (
-                <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-none">
+              {referenceImages.length > 0 ? (
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                   {referenceImages.map((imgUrl, idx) => (
                     <div
                       key={idx}
-                      className="relative w-20 h-20 rounded-xl overflow-hidden bg-white shrink-0 group border border-zinc-200/60"
+                      className="relative w-16 h-16 rounded-xl overflow-hidden bg-white shrink-0 group border border-zinc-200/60"
                     >
                       <img
                         src={imgUrl}
-                        alt={`Reference ${idx + 1}`}
+                        alt={`Ref ${idx + 1}`}
                         className="w-full h-full object-cover"
                       />
                       <button
                         type="button"
                         onClick={() => removeReferenceImage(idx)}
-                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center text-[10px]"
-                        title="Remove photo"
+                        className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/70 text-white flex items-center justify-center text-[9px]"
                       >
                         ✕
                       </button>
                     </div>
                   ))}
-
                   {referenceImages.length < 4 && (
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-20 h-20 rounded-xl bg-white border-2 border-dashed border-zinc-300 flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-950 transition-colors shrink-0"
+                      className="w-16 h-16 rounded-xl bg-white border border-dashed border-zinc-300 flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-950 shrink-0"
                     >
-                      <Plus className="w-5 h-5" />
-                      <span className="text-[10px] font-medium mt-0.5">Add</span>
+                      <Plus className="w-4 h-4" />
+                      <span className="text-[9px] font-medium">Add</span>
                     </button>
                   )}
                 </div>
-              )}
-
-              {referenceImages.length === 0 && (
+              ) : (
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full py-6 px-4 rounded-xl bg-white hover:bg-zinc-50 border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center gap-2 transition-all active:scale-[0.99] text-center"
+                  className="w-full py-3 px-3 rounded-xl bg-white hover:bg-zinc-50 border border-dashed border-zinc-200 flex items-center justify-center gap-2 text-xs font-medium text-zinc-600 transition-colors active:scale-[0.99]"
                 >
-                  <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-800">
-                    <Camera className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-zinc-900">
-                      Tap to upload photos
-                    </div>
-                    <div className="text-[11px] text-zinc-400 mt-0.5">
-                      Screenshot from Instagram, Pinterest, or gallery
-                    </div>
-                  </div>
+                  <Camera className="w-4 h-4 text-zinc-500" />
+                  <span>Attach Cake Design Screenshot</span>
                 </button>
               )}
             </div>
 
-            {/* Customer Contact Details */}
-            <div className="p-4 rounded-2xl bg-[#f4f4f5] space-y-3">
-              <div>
-                <label className="text-sm font-bold text-zinc-950 block">
-                  Your Contact Details
-                </label>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  For order coordination and delivery updates.
-                </p>
-              </div>
-
-              <div className="space-y-2.5">
+            {/* 4. Customer Contact Details */}
+            <div className="p-4 rounded-2xl bg-[#f4f4f5] space-y-2.5">
+              <label className="text-xs font-semibold text-zinc-950 block">
+                Your Contact Details
+              </label>
+              <div className="space-y-2">
                 <input
                   type="text"
-                  placeholder="Your Full Name (e.g. Rohan Sharma)"
+                  placeholder="Your Name (e.g. Rohan)"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-4 py-3.5 rounded-xl bg-white text-zinc-950 text-[16px] sm:text-sm placeholder-zinc-400 focus:outline-none font-medium"
+                  className="w-full px-3.5 py-3 rounded-xl bg-white text-zinc-950 text-[16px] sm:text-sm placeholder-zinc-400 focus:outline-none font-medium"
                 />
-
                 <input
                   type="tel"
                   maxLength={10}
-                  placeholder="10-digit WhatsApp / Phone Number"
+                  placeholder="WhatsApp Number (10 digits)"
                   value={customerPhone}
                   onChange={(e) =>
                     setCustomerPhone(e.target.value.replace(/\D/g, ""))
                   }
-                  className="w-full px-4 py-3.5 rounded-xl bg-white text-zinc-950 text-[16px] sm:text-sm placeholder-zinc-400 focus:outline-none font-medium"
+                  className="w-full px-3.5 py-3 rounded-xl bg-white text-zinc-950 text-[16px] sm:text-sm placeholder-zinc-400 focus:outline-none font-medium"
                 />
               </div>
             </div>
-          </div>
-        ) : (
-          /* ===================================================================
-              STEP 3: FULFILMENT, PARTY ADD-ONS & SUMMARY
-              =================================================================== */
-          <div className="space-y-4 animate-in fade-in slide-in-from-right-3 duration-200">
-            {/* Fulfilment Toggle Card */}
-            <div className="p-4 rounded-2xl bg-[#f4f4f5] space-y-3">
-              <label className="text-xs font-semibold text-zinc-950 block">
-                Fulfilment Method
-              </label>
 
-              <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-zinc-200/60">
+            {/* 5. Fulfilment Method (Pickup vs Delivery) */}
+            <div className="p-4 rounded-2xl bg-[#f4f4f5] space-y-2.5">
+              <label className="text-xs font-semibold text-zinc-950 block">
+                Fulfilment
+              </label>
+              <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-zinc-200/60">
                 <button
                   type="button"
                   onClick={() => setFulfilmentType("pickup")}
-                  className={`py-2.5 rounded-lg text-xs font-semibold transition-all ${
+                  className={`py-2 rounded-lg text-xs font-semibold transition-all ${
                     fulfilmentType === "pickup"
                       ? "bg-white text-zinc-950 shadow-xs"
                       : "text-zinc-600 hover:text-zinc-950"
@@ -777,7 +656,7 @@ export default function CustomerCheckoutPage() {
                 <button
                   type="button"
                   onClick={() => setFulfilmentType("delivery")}
-                  className={`py-2.5 rounded-lg text-xs font-semibold transition-all ${
+                  className={`py-2 rounded-lg text-xs font-semibold transition-all ${
                     fulfilmentType === "delivery"
                       ? "bg-white text-zinc-950 shadow-xs"
                       : "text-zinc-600 hover:text-zinc-950"
@@ -786,47 +665,35 @@ export default function CustomerCheckoutPage() {
                   Home Delivery
                 </button>
               </div>
-
               {fulfilmentType === "pickup" ? (
-                <div className="flex items-start gap-2 pt-1 text-xs text-zinc-600">
-                  <MapPin className="w-4 h-4 shrink-0 text-zinc-400 mt-0.5" />
-                  <div>
-                    <span className="font-semibold text-zinc-950">Store: </span>
-                    <span>{baker.pickup_address}</span>
-                  </div>
+                <div className="flex items-start gap-1.5 pt-0.5 text-xs text-zinc-500">
+                  <MapPin className="w-3.5 h-3.5 shrink-0 text-zinc-400 mt-0.5" />
+                  <span className="truncate">{baker.pickup_address}</span>
                 </div>
               ) : (
-                <div className="space-y-1.5 pt-1">
-                  <input
-                    type="text"
-                    placeholder="Complete flat, street & area address"
-                    value={deliveryAddress}
-                    onChange={(e) => setDeliveryAddress(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-white text-zinc-950 text-[16px] sm:text-sm placeholder-zinc-400 focus:outline-none font-medium"
-                  />
-                </div>
+                <input
+                  type="text"
+                  placeholder="Complete delivery address"
+                  value={deliveryAddress}
+                  onChange={(e) => setDeliveryAddress(e.target.value)}
+                  className="w-full px-3.5 py-3 rounded-xl bg-white text-zinc-950 text-[16px] sm:text-sm placeholder-zinc-400 focus:outline-none font-medium"
+                />
               )}
             </div>
 
-            {/* Add-on Essentials Chips */}
-            <div className="p-4 rounded-2xl bg-[#f4f4f5] space-y-3">
+            {/* 6. Party Essentials (Optional Addons) */}
+            <div className="p-4 rounded-2xl bg-[#f4f4f5] space-y-2.5">
               <div className="flex items-center justify-between">
-                <div>
-                  <label className="text-xs font-semibold text-zinc-950 block">
-                    Add Party Essentials
-                  </label>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">
-                    Tap to add candles, poppers or cutlery
-                  </p>
-                </div>
+                <label className="text-xs font-semibold text-zinc-950 block">
+                  Party Add-ons <span className="text-zinc-400 font-normal">(optional)</span>
+                </label>
                 {selectedAddons.length > 0 && (
-                  <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full shrink-0">
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
                     +{selectedAddons.length} added (+₹{addonsTotal})
                   </span>
                 )}
               </div>
-
-              <div className="flex flex-wrap gap-2 pt-0.5">
+              <div className="flex flex-wrap gap-1.5">
                 {AVAILABLE_ADDONS.map((item) => {
                   const isSelected = selectedAddons.some((a) => a.id === item.id);
                   return (
@@ -834,7 +701,7 @@ export default function CustomerCheckoutPage() {
                       key={item.id}
                       type="button"
                       onClick={() => toggleAddon(item)}
-                      className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 active:scale-95 ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 active:scale-95 ${
                         isSelected
                           ? "bg-zinc-950 text-white shadow-xs"
                           : "bg-white text-zinc-800 hover:bg-zinc-100"
@@ -844,7 +711,7 @@ export default function CustomerCheckoutPage() {
                       <span>{item.name}</span>
                       <span
                         className={`text-[10px] ${
-                          isSelected ? "text-zinc-300" : "text-zinc-400 font-medium"
+                          isSelected ? "text-zinc-300" : "text-zinc-400"
                         }`}
                       >
                         ₹{item.price}
@@ -855,32 +722,28 @@ export default function CustomerCheckoutPage() {
               </div>
             </div>
 
-            {/* Order Price Ledger */}
+            {/* 7. Bill Summary */}
             <div className="p-4 rounded-2xl bg-[#f4f4f5] space-y-2 text-xs">
               <div className="flex items-center justify-between text-zinc-600">
                 <span>Cake Base:</span>
                 <span className="font-semibold text-zinc-900">₹{basePrice}</span>
               </div>
-
               {selectedAddons.length > 0 && (
                 <div className="flex items-center justify-between text-zinc-600">
                   <span>Add-ons ({selectedAddons.length}):</span>
                   <span className="font-semibold text-zinc-900">+₹{addonsTotal}</span>
                 </div>
               )}
-
               <div className="flex items-center justify-between text-zinc-950 font-bold border-t border-zinc-200/60 pt-2">
-                <span>Total Amount:</span>
+                <span>Total Order Value:</span>
                 <span className="text-sm">₹{finalTotalPrice}</span>
               </div>
-
               <div className="flex items-center justify-between text-emerald-800 font-semibold bg-emerald-50 px-3 py-2 rounded-xl">
-                <span>Advance Token to Lock:</span>
-                <span className="text-sm">₹{tokenAmount}</span>
+                <span>Advance to Lock Slot:</span>
+                <span className="text-sm font-bold">₹{tokenAmount}</span>
               </div>
-
               <div className="flex items-center justify-between text-zinc-500 pt-0.5">
-                <span>Balance at Handover:</span>
+                <span>Balance Due at Handover:</span>
                 <span className="font-semibold text-zinc-900">₹{finalBalanceAmount}</span>
               </div>
             </div>
@@ -889,136 +752,98 @@ export default function CustomerCheckoutPage() {
       </main>
 
       {/* =======================================================================
-          STICKY 1-THUMB BOTTOM APP BAR (ALWAYS ANCHORED AT THUMB LEVEL)
+          STICKY 1-THUMB BOTTOM APP BAR (1-TAP INSTANT TOKEN PAYMENT)
           ======================================================================= */}
       {!isPaid && (
         <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-zinc-100 px-5 py-3.5 max-w-md mx-auto print:hidden">
-          {step === 1 && (
-            <button
-              type="button"
-              onClick={() => setStep(2)}
-              className="w-full h-12 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-xs"
-            >
-              <span>Continue to Details</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          )}
-
-          {step === 2 && (
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="w-12 h-12 rounded-2xl bg-[#f4f4f5] text-zinc-700 hover:text-zinc-950 hover:bg-zinc-200 flex items-center justify-center transition-colors shrink-0"
-                title="Back"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setStep(3)}
-                className="flex-1 h-12 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-xs"
-              >
-                <span>Continue to Payment</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="w-12 h-12 rounded-2xl bg-[#f4f4f5] text-zinc-700 hover:text-zinc-950 hover:bg-zinc-200 flex items-center justify-center transition-colors shrink-0"
-                  title="Back"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-                <div className="flex-1">
-                  <RainbowButton
-                    onClick={handlePayAndConfirm}
-                    className="w-full h-12 text-sm font-semibold rounded-2xl flex items-center justify-center gap-2"
-                  >
-                    <ShieldCheck className="w-4 h-4" />
-                    Pay ₹{tokenAmount} Token via UPI
-                  </RainbowButton>
-                </div>
-              </div>
-              <p className="text-[10px] text-center text-zinc-400 font-medium">
-                GPay • PhonePe • Paytm • CRED • Instant Lock
-              </p>
-            </div>
-          )}
+          <RainbowButton
+            onClick={handlePayAndConfirm}
+            className="w-full h-13 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>Pay ₹{tokenAmount} Token via UPI</span>
+          </RainbowButton>
+          <p className="text-[10px] text-zinc-400 text-center mt-1.5 font-medium">
+            GPay • PhonePe • Paytm • CRED • BHIM
+          </p>
         </div>
       )}
 
       {/* =======================================================================
-          DESKTOP QR / UPI MODAL (WHEN ACCESSED ON LAPTOP/DESKTOP)
+          DESKTOP UPI QR CODE MODAL
           ======================================================================= */}
       {showQrModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200 print:hidden">
-          <div className="bg-white rounded-3xl p-6 max-w-xs w-full text-center space-y-4 shadow-xl">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-xs w-full text-center space-y-4 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            <button
+              onClick={() => setShowQrModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#f4f4f5] text-zinc-500 hover:text-zinc-950 flex items-center justify-center"
+            >
+              ✕
+            </button>
+
             <div>
-              <h3 className="text-base font-bold text-zinc-950">
-                Scan & Pay ₹{tokenAmount}
-              </h3>
+              <h3 className="text-base font-bold text-zinc-950">Scan & Pay Token</h3>
               <p className="text-xs text-zinc-500 mt-0.5">
-                Scan with any UPI app on your phone
+                Scan with any UPI app to confirm your booking
               </p>
             </div>
 
-            <div className="w-48 h-48 mx-auto bg-[#f4f4f5] p-3 rounded-2xl flex items-center justify-center">
+            <div className="p-3 bg-white border border-zinc-100 rounded-2xl inline-block shadow-xs">
               <img
                 src={qrCodeUrl}
                 alt="UPI QR Code"
-                className="w-full h-full rounded-xl object-contain"
+                className="w-44 h-44 mx-auto rounded-xl"
               />
             </div>
 
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={handleCopyUpi}
-                className="w-full py-2.5 px-3 rounded-xl bg-[#f4f4f5] text-xs font-semibold text-zinc-800 hover:bg-zinc-200 flex items-center justify-center gap-1.5 transition-colors"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                <span>{copiedUpi ? "UPI ID Copied!" : `Copy ${baker.upi_id}`}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowQrModal(false)}
-                className="w-full py-2 text-xs font-semibold text-zinc-500 hover:text-zinc-950"
-              >
-                Close
-              </button>
+            <div className="text-center space-y-1">
+              <div className="text-xl font-bold text-zinc-950">₹{tokenAmount}</div>
+              <div className="text-[11px] text-zinc-400 font-mono">
+                {baker.upi_id}
+              </div>
             </div>
+
+            <button
+              onClick={handleCopyUpi}
+              className="w-full py-2.5 rounded-xl bg-[#f4f4f5] hover:bg-zinc-200 text-xs font-semibold text-zinc-800 transition-colors flex items-center justify-center gap-1.5"
+            >
+              {copiedUpi ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-emerald-700">UPI ID Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy UPI ID</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       )}
 
       {/* =======================================================================
-          ENLARGED IMAGE MODAL
+          IMAGE ENLARGEMENT MODAL
           ======================================================================= */}
       {enlargedImage && (
         <div
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
           onClick={() => setEnlargedImage(null)}
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-xs cursor-pointer animate-in fade-in duration-150 print:hidden"
         >
-          <div className="relative max-w-sm max-h-[80vh] w-full p-2 bg-white rounded-2xl">
+          <div className="relative max-w-sm w-full">
+            <button
+              onClick={() => setEnlargedImage(null)}
+              className="absolute -top-12 right-0 w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center text-sm"
+            >
+              ✕
+            </button>
             <img
               src={enlargedImage}
               alt="Enlarged Reference"
-              className="w-full h-auto max-h-[75vh] object-contain rounded-xl"
+              className="w-full rounded-2xl max-h-[80vh] object-contain"
             />
-            <button
-              onClick={() => setEnlargedImage(null)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center"
-            >
-              <X className="w-4 h-4" />
-            </button>
           </div>
         </div>
       )}
