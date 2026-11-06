@@ -62,7 +62,9 @@ export default function BakerPOSPage() {
   const [isEggless, setIsEggless] = useState(true);
   const [totalPrice, setTotalPrice] = useState<number>(700);
   const [customPrice, setCustomPrice] = useState("");
+  const [deliveryDate, setDeliveryDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [timeSlot, setTimeSlot] = useState("6:00 PM - 7:00 PM");
+  const [customTime, setCustomTime] = useState("");
 
   // Swipe to Refresh (Pull down) State
   const [pullY, setPullY] = useState(0);
@@ -198,7 +200,9 @@ export default function BakerPOSPage() {
     setIsEggless(true);
     setTotalPrice(700);
     setCustomPrice("");
+    setDeliveryDate(new Date().toISOString().split("T")[0]);
     setTimeSlot("6:00 PM - 7:00 PM");
+    setCustomTime("");
     setCreatedOrder(null);
     setStep(1);
     setIsCreating(true);
@@ -228,9 +232,9 @@ export default function BakerPOSPage() {
     setStep(4);
   };
 
-  const finalizeOrder = (slot: string) => {
+  const finalizeOrder = (slot?: string) => {
     if (!baker) return;
-    const finalSlot = slot || timeSlot;
+    const finalSlot = customTime.trim() ? customTime.trim() : (slot || timeSlot);
     const finalFlavour = customFlavour.trim() ? customFlavour.trim() : flavour;
     const finalPrice = customPrice ? Number(customPrice) : totalPrice;
     const token = baker.default_token_amount || 100;
@@ -248,7 +252,7 @@ export default function BakerPOSPage() {
       total_price: finalPrice,
       token_amount: token,
       balance_amount: balance,
-      delivery_date: new Date().toISOString().split("T")[0],
+      delivery_date: deliveryDate,
       time_slot: finalSlot,
       fulfilment_type: "pickup",
       status: "pending_token",
@@ -404,23 +408,53 @@ export default function BakerPOSPage() {
                 </div>
               </div>
 
-              {/* STEP 1: WEIGHT */}
+              {/* STEP 1: WEIGHT & EGGLESS PREFERENCE */}
               {step === 1 && (
-                <div className="space-y-5 text-center animate-in fade-in slide-in-from-bottom-3 duration-200">
+                <div className="space-y-4 text-center animate-in fade-in slide-in-from-bottom-3 duration-200">
                   <div>
                     <h2 className="text-2xl font-bold tracking-tight text-zinc-950">
-                      Select Weight
+                      Cake Type & Weight
                     </h2>
-                    <p className="text-xs text-zinc-500 mt-1">Tap one to auto-continue</p>
+                    <p className="text-xs text-zinc-500 mt-1">Select dietary preference and cake size</p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 pt-1">
+                  {/* EGGLESS / WITH EGG TOGGLE */}
+                  <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-zinc-200/70 max-w-xs mx-auto">
+                    <button
+                      type="button"
+                      onClick={() => setIsEggless(true)}
+                      className={`py-2 rounded-lg text-xs font-semibold transition-all ${
+                        isEggless
+                          ? "bg-white text-zinc-950 shadow-xs"
+                          : "text-zinc-600 hover:text-zinc-950"
+                      }`}
+                    >
+                      100% Eggless
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsEggless(false)}
+                      className={`py-2 rounded-lg text-xs font-semibold transition-all ${
+                        !isEggless
+                          ? "bg-white text-zinc-950 shadow-xs"
+                          : "text-zinc-600 hover:text-zinc-950"
+                      }`}
+                    >
+                      With Egg
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5 pt-1">
                     {WEIGHT_OPTIONS.map((w) => (
                       <button
                         key={w}
                         type="button"
                         onClick={() => selectWeight(w)}
-                        className="py-5 rounded-2xl bg-white text-zinc-900 font-semibold text-lg hover:bg-zinc-950 hover:text-white transition-all active:scale-95 duration-150"
+                        className={`py-4 rounded-2xl font-semibold text-base transition-all active:scale-95 duration-150 ${
+                          weight === w
+                            ? "bg-zinc-950 text-white"
+                            : "bg-white text-zinc-900 hover:bg-zinc-100"
+                        }`}
                       >
                         {w}
                       </button>
@@ -524,28 +558,126 @@ export default function BakerPOSPage() {
                 </div>
               )}
 
-              {/* STEP 4: TIME SLOT */}
+              {/* STEP 4: DATE & TIME SLOT */}
               {step === 4 && (
-                <div className="space-y-5 text-center animate-in fade-in slide-in-from-bottom-3 duration-200">
+                <div className="space-y-4 text-center animate-in fade-in slide-in-from-bottom-3 duration-200">
                   <div>
-                    <h2 className="text-2xl font-bold tracking-tight text-zinc-950">
-                      Delivery / Pickup Time
+                    <h2 className="text-xl font-bold tracking-tight text-zinc-950">
+                      Delivery Date & Time
                     </h2>
-                    <p className="text-xs text-zinc-500 mt-1">Today</p>
+                    <p className="text-xs text-zinc-500 mt-1">
+                      {weight} • {customFlavour || flavour} ({isEggless ? "Eggless" : "With Egg"})
+                    </p>
                   </div>
 
-                  <div className="space-y-2.5 pt-1">
-                    {TIME_SLOTS.map((slot) => (
-                      <button
-                        key={slot}
-                        type="button"
-                        onClick={() => finalizeOrder(slot)}
-                        className="w-full py-4 rounded-2xl bg-white text-zinc-900 font-medium text-sm hover:bg-zinc-950 hover:text-white transition-all active:scale-95 duration-150"
-                      >
-                        {slot}
-                      </button>
-                    ))}
+                  {/* DATE SELECTION CHIPS */}
+                  <div className="p-3.5 rounded-2xl bg-white space-y-2.5 text-left shadow-xs">
+                    <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block">
+                      Select Delivery Date
+                    </span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {(() => {
+                        const today = new Date().toISOString().split("T")[0];
+                        const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+                        const dayAfter = new Date(Date.now() + 86400000 * 2).toISOString().split("T")[0];
+                        return (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setDeliveryDate(today)}
+                              className={`py-2 px-1 rounded-xl text-xs font-semibold transition-all text-center ${
+                                deliveryDate === today
+                                  ? "bg-zinc-950 text-white shadow-xs"
+                                  : "bg-[#f4f4f5] text-zinc-700 hover:bg-zinc-200"
+                              }`}
+                            >
+                              Today
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeliveryDate(tomorrow)}
+                              className={`py-2 px-1 rounded-xl text-xs font-semibold transition-all text-center ${
+                                deliveryDate === tomorrow
+                                  ? "bg-zinc-950 text-white shadow-xs"
+                                  : "bg-[#f4f4f5] text-zinc-700 hover:bg-zinc-200"
+                              }`}
+                            >
+                              Tomorrow
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeliveryDate(dayAfter)}
+                              className={`py-2 px-1 rounded-xl text-xs font-semibold transition-all text-center ${
+                                deliveryDate === dayAfter
+                                  ? "bg-zinc-950 text-white shadow-xs"
+                                  : "bg-[#f4f4f5] text-zinc-700 hover:bg-zinc-200"
+                              }`}
+                            >
+                              Day After
+                            </button>
+                          </>
+                        );
+                      })()}
+                    </div>
+
+                    <div className="pt-1 flex items-center gap-2">
+                      <span className="text-xs text-zinc-500 shrink-0">Or pick date:</span>
+                      <input
+                        type="date"
+                        value={deliveryDate}
+                        min={new Date().toISOString().split("T")[0]}
+                        onChange={(e) => setDeliveryDate(e.target.value)}
+                        className="flex-1 px-3 py-1.5 rounded-xl bg-[#f4f4f5] text-xs text-zinc-950 font-medium focus:outline-none"
+                      />
+                    </div>
                   </div>
+
+                  {/* TIME SLOT PRESETS */}
+                  <div className="p-3.5 rounded-2xl bg-white space-y-2.5 text-left shadow-xs">
+                    <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block">
+                      Select Time Slot
+                    </span>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      {TIME_SLOTS.map((slot) => (
+                        <button
+                          key={slot}
+                          type="button"
+                          onClick={() => {
+                            setTimeSlot(slot);
+                            setCustomTime("");
+                          }}
+                          className={`py-2.5 px-2 rounded-xl text-xs font-medium transition-all text-center truncate ${
+                            timeSlot === slot && !customTime
+                              ? "bg-zinc-950 text-white font-semibold shadow-xs"
+                              : "bg-[#f4f4f5] text-zinc-800 hover:bg-zinc-200"
+                          }`}
+                        >
+                          {slot}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Custom Time Input */}
+                    <div className="pt-1 space-y-1">
+                      <input
+                        type="text"
+                        placeholder="Or custom time (e.g. 8:30 PM Party, 12 AM Midnight)"
+                        value={customTime}
+                        onChange={(e) => setCustomTime(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#f4f4f5] text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Finalize CTA Button */}
+                  <button
+                    type="button"
+                    onClick={() => finalizeOrder()}
+                    className="w-full py-4 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-sm transition-all active:scale-[0.98] shadow-xs"
+                  >
+                    Generate Order Link →
+                  </button>
                 </div>
               )}
 
