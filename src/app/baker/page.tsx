@@ -23,6 +23,7 @@ import {
   RotateCw,
   Clock,
   Phone,
+  MapPin,
 } from "lucide-react";
 import { RainbowButton } from "@/components/ui/rainbow-button";
 import { MovingBorderButton } from "@/components/ui/moving-border";
@@ -494,27 +495,48 @@ export default function BakerPOSPage() {
                     </span>
                   </div>
 
-                  {/* Customer Line (Simple & Flat) */}
-                  {(ord.customer_name || ord.delivery_address) && (
-                    <div className="flex items-center justify-between text-xs text-zinc-700 pt-0.5">
-                      <div className="flex items-center gap-1.5 truncate">
-                        <span className="font-semibold text-zinc-950">
-                          {ord.customer_name || "Customer"}
+                  {/* Customer & Fulfilment Details Block */}
+                  {(ord.customer_name || ord.customer_phone || ord.delivery_address) && (
+                    <div className="p-3 rounded-xl bg-white border border-zinc-200/60 text-xs space-y-2">
+                      {/* Row 1: Customer Name & Direct Call Button */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-bold text-zinc-950 text-sm truncate">
+                            {ord.customer_name || "Customer"}
+                          </span>
+                          {ord.customer_phone && (
+                            <a
+                              href={`tel:${ord.customer_phone}`}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 font-mono text-[11px] font-semibold hover:bg-emerald-100 transition-colors shrink-0"
+                              title="Call customer"
+                            >
+                              <Phone className="w-3 h-3 text-emerald-600" />
+                              <span>+{ord.customer_phone}</span>
+                            </a>
+                          )}
+                        </div>
+
+                        {/* Fulfilment Badge */}
+                        <span
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shrink-0 ${
+                            ord.fulfilment_type === "delivery"
+                              ? "bg-purple-50 text-purple-800 border border-purple-200/50"
+                              : "bg-zinc-100 text-zinc-700"
+                          }`}
+                        >
+                          {ord.fulfilment_type === "delivery" ? "Home Delivery" : "Store Pickup"}
                         </span>
-                        {ord.customer_phone && (
-                          <a
-                            href={`tel:${ord.customer_phone}`}
-                            className="text-zinc-500 font-mono text-[11px] hover:text-zinc-950 underline"
-                          >
-                            +{ord.customer_phone}
-                          </a>
-                        )}
                       </div>
-                      <span className="text-[10px] font-medium text-zinc-500 shrink-0">
-                        {ord.fulfilment_type === "delivery"
-                          ? `Delivery: ${ord.delivery_address || "Address provided"}`
-                          : "Self Pickup"}
-                      </span>
+
+                      {/* Row 2: Delivery Address (Only if Delivery) */}
+                      {ord.fulfilment_type === "delivery" && ord.delivery_address && (
+                        <div className="flex items-start gap-1.5 pt-1.5 border-t border-zinc-100 text-zinc-700 text-xs">
+                          <MapPin className="w-3.5 h-3.5 text-zinc-400 shrink-0 mt-0.5" />
+                          <span className="font-medium text-zinc-900 leading-snug">
+                            {ord.delivery_address}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
 
