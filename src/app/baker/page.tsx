@@ -50,24 +50,25 @@ const FLAVOUR_OPTIONS = [
   "Custom / Other",
 ];
 const PRICE_PRESETS = [550, 700, 850, 1000];
-const HOUR_OPTIONS = [
-  { value: "8:00 AM", label: "8:00 AM (Subah)" },
-  { value: "9:00 AM", label: "9:00 AM (Subah)" },
-  { value: "10:00 AM", label: "10:00 AM (Subah)" },
-  { value: "11:00 AM", label: "11:00 AM (Subah)" },
-  { value: "12:00 PM", label: "12:00 PM (Dopahar)" },
-  { value: "1:00 PM", label: "1:00 PM (Dopahar)" },
-  { value: "2:00 PM", label: "2:00 PM (Dopahar)" },
-  { value: "3:00 PM", label: "3:00 PM (Dopahar)" },
-  { value: "4:00 PM", label: "4:00 PM (Shaam)" },
-  { value: "5:00 PM", label: "5:00 PM (Shaam)" },
-  { value: "6:00 PM", label: "6:00 PM (Shaam)" },
-  { value: "7:00 PM", label: "7:00 PM (Shaam)" },
-  { value: "8:00 PM", label: "8:00 PM (Raat)" },
-  { value: "9:00 PM", label: "9:00 PM (Raat)" },
-  { value: "10:00 PM", label: "10:00 PM (Raat)" },
-  { value: "11:00 PM", label: "11:00 PM (Raat)" },
-];
+
+const calculateDeliverySlot = (hourVal: number | string, ampm: "AM" | "PM") => {
+  let h = typeof hourVal === "string" ? parseInt(hourVal, 10) : hourVal;
+  if (isNaN(h) || h < 1) h = 1;
+  if (h > 12) h = 12;
+
+  let nextH = h + 1;
+  let nextAmPm = ampm;
+
+  if (h === 11) {
+    nextH = 12;
+    nextAmPm = ampm === "AM" ? "PM" : "AM";
+  } else if (h === 12) {
+    nextH = 1;
+    nextAmPm = ampm;
+  }
+
+  return `${h}:00 ${ampm} - ${nextH}:00 ${nextAmPm}`;
+};
 
 const isValidCakeMessage = (msg?: string) => {
   if (!msg) return false;
@@ -126,10 +127,10 @@ export default function BakerPOSPage() {
   const [totalPrice, setTotalPrice] = useState<number>(700);
   const [customPrice, setCustomPrice] = useState("");
   const [deliveryDate, setDeliveryDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [selectedHour, setSelectedHour] = useState("6");
+  const [selectedAmPm, setSelectedAmPm] = useState<"AM" | "PM">("PM");
   const [timeSlot, setTimeSlot] = useState("6:00 PM - 7:00 PM");
   const [customTime, setCustomTime] = useState("");
-  const [rangeFrom, setRangeFrom] = useState("6:00 PM");
-  const [rangeTo, setRangeTo] = useState("7:00 PM");
 
   // Settings Modal State
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -290,6 +291,8 @@ export default function BakerPOSPage() {
     setCustomFlavour("");
     setIsEggless(true);
     setDeliveryDate(new Date().toISOString().split("T")[0]);
+    setSelectedHour("6");
+    setSelectedAmPm("PM");
     setTimeSlot("6:00 PM - 7:00 PM");
     setCustomTime("");
     setCreatedOrder(null);
@@ -616,10 +619,11 @@ export default function BakerPOSPage() {
 
             <RainbowButton
               onClick={handleStartNewOrder}
+              variant="outline"
               size="sm"
-              className="h-8 rounded-xl px-3 text-xs font-semibold active:scale-95 transition-transform"
+              className="h-8 rounded-xl px-3 text-xs font-bold text-zinc-950 bg-white border border-zinc-200/80 shadow-xs active:scale-95 transition-transform"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-3.5 h-3.5 text-zinc-950" />
               <span>New Order</span>
             </RainbowButton>
           </div>
@@ -1145,7 +1149,7 @@ export default function BakerPOSPage() {
                         </div>
                       </div>
 
-                      {/* Date & Time Range Row */}
+                      {/* Date & Time Row (Zero Cognitive Fatigue - Auto 1-Hour Window) */}
                       <div className="grid grid-cols-2 gap-2">
                         {/* 1. Date Input */}
                         <div>
@@ -1161,81 +1165,54 @@ export default function BakerPOSPage() {
                           />
                         </div>
 
-                        {/* 2. Inline Time Range (Se ... Tak) */}
+                        {/* 2. Zero-Fatigue 1-Hour Time Window */}
                         <div>
-                          <label className="text-[10px] text-zinc-500 font-medium block mb-1">
-                            Time (Kitne se kitne baje)
+                          <label className="text-[10px] text-zinc-500 font-medium flex items-center justify-between mb-1 truncate">
+                            <span>Time Slot</span>
+                            <span className="text-emerald-700 font-bold font-mono text-[10px]">
+                              {timeSlot}
+                            </span>
                           </label>
-                          <div className="flex items-center gap-1 bg-white px-2 py-1.5 rounded-xl border border-zinc-200/60">
-                            <select
-                              value={rangeFrom}
+                          <div className="flex items-center gap-1 bg-white px-2.5 py-1.5 rounded-xl border border-zinc-200/60 focus-within:border-zinc-950 focus-within:ring-1 focus-within:ring-zinc-950/10">
+                            <input
+                              type="number"
+                              min="1"
+                              max="12"
+                              value={selectedHour}
                               onChange={(e) => {
-                                const newFrom = e.target.value;
-                                setRangeFrom(newFrom);
-                                setTimeSlot(`${newFrom} - ${rangeTo}`);
+                                const val = e.target.value;
+                                setSelectedHour(val);
+                                const num = parseInt(val, 10);
+                                if (!isNaN(num) && num >= 1 && num <= 12) {
+                                  setTimeSlot(calculateDeliverySlot(num, selectedAmPm));
+                                }
                               }}
-                              className="bg-transparent text-xs font-bold text-zinc-950 focus:outline-none flex-1 truncate"
-                            >
-                              {HOUR_OPTIONS.map((h) => (
-                                <option key={h.value} value={h.value}>
-                                  {h.label}
-                                </option>
-                              ))}
-                            </select>
-                            <span className="text-zinc-400 text-[10px] font-bold px-0.5">to</span>
+                              onBlur={() => {
+                                let num = parseInt(selectedHour, 10);
+                                if (isNaN(num) || num < 1) num = 6;
+                                if (num > 12) num = 12;
+                                setSelectedHour(String(num));
+                                setTimeSlot(calculateDeliverySlot(num, selectedAmPm));
+                              }}
+                              placeholder="6"
+                              className="w-8 text-center text-xs font-bold text-zinc-950 bg-transparent focus:outline-none"
+                            />
+                            <span className="text-[11px] font-bold text-zinc-400">:00</span>
                             <select
-                              value={rangeTo}
+                              value={selectedAmPm}
                               onChange={(e) => {
-                                const newTo = e.target.value;
-                                setRangeTo(newTo);
-                                setTimeSlot(`${rangeFrom} - ${newTo}`);
+                                const ap = e.target.value as "AM" | "PM";
+                                setSelectedAmPm(ap);
+                                const num = parseInt(selectedHour, 10) || 6;
+                                setTimeSlot(calculateDeliverySlot(num, ap));
                               }}
-                              className="bg-transparent text-xs font-bold text-zinc-950 focus:outline-none flex-1 truncate"
+                              className="bg-zinc-100 hover:bg-zinc-200 text-zinc-900 text-[11px] font-bold rounded-lg px-2 py-0.5 focus:outline-none cursor-pointer border-0 ml-auto"
                             >
-                              {HOUR_OPTIONS.map((h) => (
-                                <option key={h.value} value={h.value}>
-                                  {h.label}
-                                </option>
-                              ))}
+                              <option value="AM">AM</option>
+                              <option value="PM">PM</option>
                             </select>
                           </div>
                         </div>
-                      </div>
-
-                      {/* 1-Tap Quick Hours (Zero Cognitive Load) */}
-                      <div className="flex items-center gap-1.5 pt-0.5 overflow-x-auto scrollbar-none">
-                        <span className="text-[10px] text-zinc-400 font-semibold shrink-0">
-                          Quick:
-                        </span>
-                        {[
-                          { label: "5 - 6 PM", from: "5:00 PM", to: "6:00 PM" },
-                          { label: "6 - 7 PM", from: "6:00 PM", to: "7:00 PM" },
-                          { label: "7 - 8 PM", from: "7:00 PM", to: "8:00 PM" },
-                          { label: "8 - 9 PM", from: "8:00 PM", to: "9:00 PM" },
-                          { label: "2 - 4 PM", from: "2:00 PM", to: "4:00 PM" },
-                          { label: "11 AM - 1 PM", from: "11:00 AM", to: "1:00 PM" },
-                        ].map((q) => {
-                          const slotStr = `${q.from} - ${q.to}`;
-                          const isSel = timeSlot === slotStr;
-                          return (
-                            <button
-                              key={q.label}
-                              type="button"
-                              onClick={() => {
-                                setRangeFrom(q.from);
-                                setRangeTo(q.to);
-                                setTimeSlot(slotStr);
-                              }}
-                              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold shrink-0 transition-all ${
-                                isSel
-                                  ? "bg-zinc-950 text-white shadow-2xs"
-                                  : "bg-white text-zinc-600 hover:text-zinc-950 border border-zinc-200/60"
-                              }`}
-                            >
-                              {q.label}
-                            </button>
-                          );
-                        })}
                       </div>
                     </div>
                   </div>
