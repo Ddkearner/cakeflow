@@ -1,3 +1,11 @@
+export interface FlavourItem {
+  id: string;
+  name: string;
+  prices: {
+    [weight: string]: number; // e.g. { "0.5 Kg": 450, "1 Kg": 750, "1.5 Kg": 1100, "2 Kg": 1400 }
+  };
+}
+
 export interface Baker {
   id: string;
   slug: string;
@@ -11,6 +19,7 @@ export interface Baker {
   default_token_amount: number;
   pin?: string; // 4-digit PIN for quick kitchen POS lock screen (default '1234')
   max_daily_cakes?: number; // Daily oven/time capacity limit (default 4)
+  menu_items?: FlavourItem[];
   created_at: string;
 }
 

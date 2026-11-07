@@ -17,8 +17,14 @@ CREATE TABLE IF NOT EXISTS public.bakers (
   default_token_amount INT DEFAULT 100,
   pin TEXT DEFAULT '1234',
   max_daily_cakes INT DEFAULT 4,
+  menu_items JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migration if table already exists
+ALTER TABLE public.bakers ADD COLUMN IF NOT EXISTS pin TEXT DEFAULT '1234';
+ALTER TABLE public.bakers ADD COLUMN IF NOT EXISTS max_daily_cakes INT DEFAULT 4;
+ALTER TABLE public.bakers ADD COLUMN IF NOT EXISTS menu_items JSONB DEFAULT '[]'::jsonb;
 
 -- 2. Create Orders Table
 CREATE TABLE IF NOT EXISTS public.orders (

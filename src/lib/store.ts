@@ -1,5 +1,38 @@
-import { Baker, Order } from "./types";
+import { Baker, Order, FlavourItem } from "./types";
 import { supabase } from "./supabase";
+
+export const DEFAULT_FLAVOURS: FlavourItem[] = [
+  {
+    id: "f-1",
+    name: "Chocolate Truffle",
+    prices: { "0.5 Kg": 450, "1 Kg": 750, "1.5 Kg": 1100, "2 Kg": 1400 },
+  },
+  {
+    id: "f-2",
+    name: "Pineapple Fresh",
+    prices: { "0.5 Kg": 350, "1 Kg": 600, "1.5 Kg": 900, "2 Kg": 1150 },
+  },
+  {
+    id: "f-3",
+    name: "Black Forest",
+    prices: { "0.5 Kg": 400, "1 Kg": 700, "1.5 Kg": 1000, "2 Kg": 1300 },
+  },
+  {
+    id: "f-4",
+    name: "Red Velvet Cream Cheese",
+    prices: { "0.5 Kg": 500, "1 Kg": 850, "1.5 Kg": 1250, "2 Kg": 1600 },
+  },
+  {
+    id: "f-5",
+    name: "Rasmalai Tres Leches",
+    prices: { "0.5 Kg": 550, "1 Kg": 950, "1.5 Kg": 1400, "2 Kg": 1800 },
+  },
+  {
+    id: "f-6",
+    name: "Blueberry Cheesecake",
+    prices: { "0.5 Kg": 600, "1 Kg": 1100, "1.5 Kg": 1600, "2 Kg": 2000 },
+  },
+];
 
 export const SEED_BAKERS: Baker[] = [
   {
@@ -15,6 +48,7 @@ export const SEED_BAKERS: Baker[] = [
     default_token_amount: 100,
     pin: "1234",
     max_daily_cakes: 4,
+    menu_items: DEFAULT_FLAVOURS,
     created_at: new Date().toISOString(),
   },
   {
@@ -30,6 +64,7 @@ export const SEED_BAKERS: Baker[] = [
     default_token_amount: 200,
     pin: "1234",
     max_daily_cakes: 4,
+    menu_items: DEFAULT_FLAVOURS,
     created_at: new Date().toISOString(),
   },
 ];
@@ -93,7 +128,19 @@ export function getLocalBakers(): Baker[] {
       localStorage.setItem(STORAGE_KEYS.BAKERS, JSON.stringify(SEED_BAKERS));
       return SEED_BAKERS;
     }
-    return JSON.parse(raw);
+    const parsed: Baker[] = JSON.parse(raw);
+    let updated = false;
+    const sanitized = parsed.map((b) => {
+      if (!b.menu_items || b.menu_items.length === 0) {
+        updated = true;
+        return { ...b, menu_items: DEFAULT_FLAVOURS };
+      }
+      return b;
+    });
+    if (updated) {
+      localStorage.setItem(STORAGE_KEYS.BAKERS, JSON.stringify(sanitized));
+    }
+    return sanitized;
   } catch {
     return SEED_BAKERS;
   }
@@ -223,6 +270,7 @@ export async function syncBakerToCloud(baker: Baker): Promise<boolean> {
       default_token_amount: baker.default_token_amount || 100,
       pin: baker.pin || "1234",
       max_daily_cakes: baker.max_daily_cakes || 4,
+      menu_items: baker.menu_items || DEFAULT_FLAVOURS,
     };
 
     const { error } = await supabase.from("bakers").upsert(payload, {
@@ -355,6 +403,7 @@ export async function fetchRemoteBaker(bakerId: string): Promise<Baker | null> {
       default_token_amount: data.default_token_amount || 100,
       pin: data.pin || "1234",
       max_daily_cakes: data.max_daily_cakes || 4,
+      menu_items: data.menu_items || DEFAULT_FLAVOURS,
       created_at: data.created_at,
     };
 
