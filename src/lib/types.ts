@@ -6,6 +6,12 @@ export interface FlavourItem {
   };
 }
 
+export interface AddonItem {
+  id: string;
+  name: string;
+  price: number;
+}
+
 export interface Baker {
   id: string;
   slug: string;
@@ -20,6 +26,7 @@ export interface Baker {
   pin?: string; // 4-digit PIN for quick kitchen POS lock screen (default '1234')
   max_daily_cakes?: number; // Daily oven/time capacity limit (default 4)
   menu_items?: FlavourItem[];
+  addon_items?: AddonItem[];
   created_at: string;
 }
 

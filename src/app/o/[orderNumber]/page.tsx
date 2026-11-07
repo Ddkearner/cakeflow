@@ -9,6 +9,7 @@ import {
   getLocalBakers,
   fetchRemoteOrderByNumber,
   fetchRemoteBaker,
+  DEFAULT_ADDONS,
 } from "@/lib/store";
 import {
   buildUpiIntentLink,
@@ -28,15 +29,6 @@ import {
   ChevronUp,
 } from "lucide-react";
 
-const AVAILABLE_ADDONS = [
-  { id: "sparkler", name: "Magic Sparkler Candle", price: 40 },
-  { id: "number_candle", name: "Number Candle (0-9)", price: 30 },
-  { id: "party_popper", name: "Party Popper", price: 50 },
-  { id: "balloons", name: "Metallic Balloons Set", price: 80 },
-  { id: "birthday_cap", name: "Party Cap", price: 30 },
-  { id: "cutlery", name: "Wooden Knife & Plates", price: 30 },
-];
-
 export default function CustomerCheckoutPage() {
   const params = useParams();
   const orderNumber = (params?.orderNumber as string) || "";
@@ -44,6 +36,11 @@ export default function CustomerCheckoutPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [baker, setBaker] = useState<Baker | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const availableAddons =
+    baker?.addon_items && baker.addon_items.length > 0
+      ? baker.addon_items
+      : DEFAULT_ADDONS;
 
   // Essential Form Fields
   const [cakeMessage, setCakeMessage] = useState("");
@@ -716,7 +713,7 @@ export default function CustomerCheckoutPage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-1.5">
-                      {AVAILABLE_ADDONS.map((item) => {
+                      {availableAddons.map((item) => {
                         const isSelected = selectedAddons.some((a) => a.id === item.id);
                         return (
                           <button

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Baker, Order, FlavourItem } from "@/lib/types";
+import { Baker, Order, FlavourItem, AddonItem } from "@/lib/types";
 import {
   getLocalBakers,
   getBakerByToken,
@@ -10,6 +10,7 @@ import {
   saveLocalBaker,
   fetchRemoteOrdersByBaker,
   DEFAULT_FLAVOURS,
+  DEFAULT_ADDONS,
 } from "@/lib/store";
 import {
   generateOrderNumber,
@@ -93,7 +94,7 @@ export default function BakerPOSPage() {
 
   // Settings Modal State
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<"menu" | "store">("menu");
+  const [settingsTab, setSettingsTab] = useState<"menu" | "addons" | "store">("menu");
   const [settingsSavedToast, setSettingsSavedToast] = useState(false);
 
   // Menu Items State
@@ -108,6 +109,13 @@ export default function BakerPOSPage() {
     "2 Kg": 1400,
   });
 
+  // Addon Items State
+  const [addonItems, setAddonItems] = useState<AddonItem[]>(DEFAULT_ADDONS);
+  const [isEditingAddon, setIsEditingAddon] = useState(false);
+  const [editingAddonId, setEditingAddonId] = useState<string | null>(null);
+  const [addonNameInput, setAddonNameInput] = useState("");
+  const [addonPriceInput, setAddonPriceInput] = useState(50);
+
   // Store Profile State
   const [storeNameInput, setStoreNameInput] = useState("");
   const [storePhoneInput, setStorePhoneInput] = useState("");
@@ -116,7 +124,7 @@ export default function BakerPOSPage() {
   const [storeTokenInput, setStoreTokenInput] = useState(100);
   const [storeMaxDailyInput, setStoreMaxDailyInput] = useState(4);
 
-  // Sync menu & profile from baker when baker changes
+  // Sync menu, addons & profile from baker when baker changes
   useEffect(() => {
     if (baker) {
       const items =
@@ -124,6 +132,13 @@ export default function BakerPOSPage() {
           ? baker.menu_items
           : DEFAULT_FLAVOURS;
       setMenuItems(items);
+
+      const extras =
+        baker.addon_items && baker.addon_items.length > 0
+          ? baker.addon_items
+          : DEFAULT_ADDONS;
+      setAddonItems(extras);
+
       setStoreNameInput(baker.name || "");
       setStorePhoneInput(baker.phone || "");
       setStoreUpiInput(baker.upi_id || "");
@@ -321,6 +336,67 @@ export default function BakerPOSPage() {
     }
   };
 
+  const handleOpenAddAddon = () => {
+    setEditingAddonId(null);
+    setAddonNameInput("");
+    setAddonPriceInput(50);
+    setIsEditingAddon(true);
+  };
+
+  const handleOpenEditAddon = (item: AddonItem) => {
+    setEditingAddonId(item.id);
+    setAddonNameInput(item.name);
+    setAddonPriceInput(item.price);
+    setIsEditingAddon(true);
+  };
+
+  const handleSaveAddonItem = () => {
+    const trimmed = addonNameInput.trim();
+    if (!trimmed) return;
+
+    let updated: AddonItem[];
+    if (editingAddonId) {
+      updated = addonItems.map((a) =>
+        a.id === editingAddonId
+          ? { ...a, name: trimmed, price: Number(addonPriceInput) || 0 }
+          : a
+      );
+    } else {
+      const newItem: AddonItem = {
+        id: `a-${Date.now()}`,
+        name: trimmed,
+        price: Number(addonPriceInput) || 0,
+      };
+      updated = [...addonItems, newItem];
+    }
+    setAddonItems(updated);
+    setIsEditingAddon(false);
+
+    if (baker) {
+      const updatedBaker: Baker = {
+        ...baker,
+        menu_items: menuItems,
+        addon_items: updated,
+      };
+      setBaker(updatedBaker);
+      saveLocalBaker(updatedBaker);
+    }
+  };
+
+  const handleDeleteAddon = (id: string) => {
+    const updated = addonItems.filter((a) => a.id !== id);
+    setAddonItems(updated);
+    if (baker) {
+      const updatedBaker: Baker = {
+        ...baker,
+        menu_items: menuItems,
+        addon_items: updated,
+      };
+      setBaker(updatedBaker);
+      saveLocalBaker(updatedBaker);
+    }
+  };
+
   const handleSaveStoreProfile = () => {
     if (!baker) return;
     const updatedBaker: Baker = {
@@ -332,6 +408,7 @@ export default function BakerPOSPage() {
       default_token_amount: Number(storeTokenInput) || 100,
       max_daily_cakes: Number(storeMaxDailyInput) || 4,
       menu_items: menuItems,
+      addon_items: addonItems,
     };
     setBaker(updatedBaker);
     saveLocalBaker(updatedBaker);
@@ -1219,12 +1296,13 @@ export default function BakerPOSPage() {
 
               {/* Segment Tabs */}
               <div className="px-5 pt-3 pb-2 bg-white border-b border-zinc-100 shrink-0">
-                <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-zinc-100 text-xs font-semibold">
+                <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-zinc-100 text-xs font-semibold">
                   <button
                     type="button"
                     onClick={() => {
                       setSettingsTab("menu");
                       setIsEditingFlavour(false);
+                      setIsEditingAddon(false);
                     }}
                     className={`py-2 rounded-lg transition-all ${
                       settingsTab === "menu"
@@ -1232,18 +1310,37 @@ export default function BakerPOSPage() {
                         : "text-zinc-500 hover:text-zinc-950"
                     }`}
                   >
-                    Cake Menu & Pricing
+                    Flavours
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSettingsTab("store")}
+                    onClick={() => {
+                      setSettingsTab("addons");
+                      setIsEditingFlavour(false);
+                      setIsEditingAddon(false);
+                    }}
+                    className={`py-2 rounded-lg transition-all ${
+                      settingsTab === "addons"
+                        ? "bg-white text-zinc-950 shadow-xs"
+                        : "text-zinc-500 hover:text-zinc-950"
+                    }`}
+                  >
+                    Party Add-ons
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettingsTab("store");
+                      setIsEditingFlavour(false);
+                      setIsEditingAddon(false);
+                    }}
                     className={`py-2 rounded-lg transition-all ${
                       settingsTab === "store"
                         ? "bg-white text-zinc-950 shadow-xs"
                         : "text-zinc-500 hover:text-zinc-950"
                     }`}
                   >
-                    Store Profile & UPI
+                    Store Profile
                   </button>
                 </div>
               </div>
@@ -1396,8 +1493,128 @@ export default function BakerPOSPage() {
                       ))}
                     </div>
                   </div>
+                ) : settingsTab === "addons" ? (
+                  /* TAB 2: PARTY ADD-ONS & EXTRAS */
+                  <div className="space-y-4">
+                    {/* Add / Edit Addon Form */}
+                    {isEditingAddon ? (
+                      <div className="p-4 rounded-2xl bg-[#f4f4f5] border border-zinc-200/80 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-sm text-zinc-950">
+                            {editingAddonId ? "Edit Party Item" : "Add New Party Item"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingAddon(false)}
+                            className="text-zinc-400 hover:text-zinc-700"
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                            Item Name
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Magic Sparkler Candle, Acrylic Cake Topper, Chocolate Bomb"
+                            value={addonNameInput}
+                            onChange={(e) => setAddonNameInput(e.target.value)}
+                            className="w-full px-3.5 py-2.5 rounded-xl bg-white text-zinc-950 text-xs font-semibold focus:outline-none border border-zinc-200"
+                            autoFocus
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                            Price (₹)
+                          </label>
+                          <input
+                            type="number"
+                            value={addonPriceInput}
+                            onChange={(e) => setAddonPriceInput(Number(e.target.value) || 0)}
+                            className="w-full px-3.5 py-2.5 rounded-xl bg-white text-zinc-950 text-xs font-semibold focus:outline-none border border-zinc-200"
+                          />
+                        </div>
+
+                        <div className="pt-2 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={handleSaveAddonItem}
+                            className="flex-1 py-2.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs transition-all active:scale-98"
+                          >
+                            Save Item
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingAddon(false)}
+                            className="py-2.5 px-4 rounded-xl bg-zinc-200 hover:bg-zinc-300 text-zinc-700 font-semibold text-xs"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-bold text-zinc-950 text-sm">
+                            Party Extras & Add-ons
+                          </span>
+                          <span className="text-zinc-400 text-xs ml-2">
+                            ({addonItems.length} items)
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleOpenAddAddon}
+                          className="py-1.5 px-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs flex items-center gap-1.5 active:scale-95 shadow-xs"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Add Item</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Addons List */}
+                    <div className="space-y-2">
+                      {addonItems.map((item) => (
+                        <div
+                          key={item.id}
+                          className="p-3 rounded-2xl bg-[#f4f4f5] border border-zinc-200/60 flex items-center justify-between"
+                        >
+                          <div>
+                            <span className="font-bold text-sm text-zinc-950 block">
+                              {item.name}
+                            </span>
+                            <span className="text-xs font-bold text-emerald-700 mt-0.5 inline-block">
+                              +₹{item.price}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditAddon(item)}
+                              className="w-7 h-7 rounded-lg bg-white hover:bg-zinc-200 text-zinc-700 flex items-center justify-center transition-colors"
+                              title="Edit item"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAddon(item.id)}
+                              className="w-7 h-7 rounded-lg bg-white hover:bg-red-50 text-red-500 flex items-center justify-center transition-colors"
+                              title="Delete item"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 ) : (
-                  /* TAB 2: STORE PROFILE */
+                  /* TAB 3: STORE PROFILE */
                   <div className="space-y-3.5">
                     <div>
                       <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">

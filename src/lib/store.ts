@@ -1,5 +1,14 @@
-import { Baker, Order, FlavourItem } from "./types";
+import { Baker, Order, FlavourItem, AddonItem } from "./types";
 import { supabase } from "./supabase";
+
+export const DEFAULT_ADDONS: AddonItem[] = [
+  { id: "a-1", name: "Magic Sparkler Candle", price: 40 },
+  { id: "a-2", name: "Acrylic Cake Topper", price: 80 },
+  { id: "a-3", name: "Number Candle (0-9)", price: 30 },
+  { id: "a-4", name: "Party Popper", price: 50 },
+  { id: "a-5", name: "Metallic Balloons Set", price: 80 },
+  { id: "a-6", name: "Wooden Knife & Plates", price: 30 },
+];
 
 export const DEFAULT_FLAVOURS: FlavourItem[] = [
   {
@@ -49,6 +58,7 @@ export const SEED_BAKERS: Baker[] = [
     pin: "1234",
     max_daily_cakes: 4,
     menu_items: DEFAULT_FLAVOURS,
+    addon_items: DEFAULT_ADDONS,
     created_at: new Date().toISOString(),
   },
   {
@@ -65,6 +75,7 @@ export const SEED_BAKERS: Baker[] = [
     pin: "1234",
     max_daily_cakes: 4,
     menu_items: DEFAULT_FLAVOURS,
+    addon_items: DEFAULT_ADDONS,
     created_at: new Date().toISOString(),
   },
 ];
@@ -131,11 +142,16 @@ export function getLocalBakers(): Baker[] {
     const parsed: Baker[] = JSON.parse(raw);
     let updated = false;
     const sanitized = parsed.map((b) => {
-      if (!b.menu_items || b.menu_items.length === 0) {
+      let bMod = { ...b };
+      if (!bMod.menu_items || bMod.menu_items.length === 0) {
         updated = true;
-        return { ...b, menu_items: DEFAULT_FLAVOURS };
+        bMod.menu_items = DEFAULT_FLAVOURS;
       }
-      return b;
+      if (!bMod.addon_items || bMod.addon_items.length === 0) {
+        updated = true;
+        bMod.addon_items = DEFAULT_ADDONS;
+      }
+      return bMod;
     });
     if (updated) {
       localStorage.setItem(STORAGE_KEYS.BAKERS, JSON.stringify(sanitized));
@@ -271,6 +287,7 @@ export async function syncBakerToCloud(baker: Baker): Promise<boolean> {
       pin: baker.pin || "1234",
       max_daily_cakes: baker.max_daily_cakes || 4,
       menu_items: baker.menu_items || DEFAULT_FLAVOURS,
+      addon_items: baker.addon_items || DEFAULT_ADDONS,
     };
 
     const { error } = await supabase.from("bakers").upsert(payload, {
@@ -404,6 +421,7 @@ export async function fetchRemoteBaker(bakerId: string): Promise<Baker | null> {
       pin: data.pin || "1234",
       max_daily_cakes: data.max_daily_cakes || 4,
       menu_items: data.menu_items || DEFAULT_FLAVOURS,
+      addon_items: data.addon_items || DEFAULT_ADDONS,
       created_at: data.created_at,
     };
 
