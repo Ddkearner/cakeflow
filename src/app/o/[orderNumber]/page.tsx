@@ -643,22 +643,26 @@ export default function CustomerCheckoutPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 border border-zinc-200/80 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none focus:border-zinc-400 font-medium"
                   />
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      placeholder="Receiver's Name"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 border border-zinc-200/80 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none focus:border-zinc-400 font-medium"
-                    />
-                    <input
-                      type="tel"
-                      maxLength={10}
-                      placeholder="Contact No. for Delivery"
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ""))}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 border border-zinc-200/80 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none focus:border-zinc-400 font-mono font-medium"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="min-w-0">
+                      <input
+                        type="text"
+                        placeholder="Receiver's Name"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 border border-zinc-200/80 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none focus:border-zinc-400 font-medium"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <input
+                        type="tel"
+                        maxLength={10}
+                        placeholder="WhatsApp / Contact No."
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ""))}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 border border-zinc-200/80 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none focus:border-zinc-400 font-mono font-medium"
+                      />
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -687,23 +691,27 @@ export default function CustomerCheckoutPage() {
                     </div>
                   </div>
 
-                  {/* Clean Optional Booking Name (Single line) */}
-                  <div className="pt-2 border-t border-zinc-100 flex items-center gap-2">
-                    <input
-                      type="text"
-                      placeholder="Your Name (for cake box tag)"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      className="flex-1 px-3 py-2 rounded-xl bg-zinc-50 border border-zinc-200/60 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none font-medium"
-                    />
-                    <input
-                      type="tel"
-                      maxLength={10}
-                      placeholder="WhatsApp No."
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ""))}
-                      className="w-32 px-3 py-2 rounded-xl bg-zinc-50 border border-zinc-200/60 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none font-mono font-medium"
-                    />
+                  {/* Clean Booking Name & WhatsApp */}
+                  <div className="pt-2 border-t border-zinc-100 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="min-w-0">
+                      <input
+                        type="text"
+                        placeholder="Your Name (for cake box tag)"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 border border-zinc-200/60 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none focus:border-zinc-400 font-medium"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <input
+                        type="tel"
+                        maxLength={10}
+                        placeholder="WhatsApp No."
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ""))}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 border border-zinc-200/60 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none focus:border-zinc-400 font-mono font-medium"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
