@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { Baker, Order, FlavourItem, AddonItem } from "@/lib/types";
 import {
@@ -95,7 +95,7 @@ const isValidCakeMessage = (msg?: string) => {
   );
 };
 
-export default function BakerPOSPage() {
+function BakerPOSContent() {
   const { showToast } = useToast();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -2727,5 +2727,21 @@ export default function BakerPOSPage() {
           </div>
         )}
     </div>
+  );
+}
+
+export default function BakerPOSPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-[100dvh] bg-white flex flex-col p-4 max-w-xl mx-auto space-y-4 pt-16">
+          <KitchenCardSkeleton />
+          <KitchenCardSkeleton />
+          <KitchenCardSkeleton />
+        </div>
+      }
+    >
+      <BakerPOSContent />
+    </Suspense>
   );
 }
