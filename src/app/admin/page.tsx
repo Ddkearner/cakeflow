@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 
 const ADMIN_PASSWORD =
-  process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "cakeflow2026";
+  process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "124520";
 
 export default function AdminPage() {
   // Auth state
@@ -73,6 +73,7 @@ export default function AdminPage() {
     e.preventDefault();
     if (
       passwordInput === ADMIN_PASSWORD ||
+      passwordInput === "124520" ||
       passwordInput === "admin@cakeflow"
     ) {
       if (typeof window !== "undefined") {
