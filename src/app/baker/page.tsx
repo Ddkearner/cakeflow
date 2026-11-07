@@ -26,14 +26,8 @@ import {
   Phone,
   MapPin,
   Download,
-  Lock,
-  Unlock,
-  AlertCircle,
-  Shield,
-  Delete,
 } from "lucide-react";
 import { RainbowButton } from "@/components/ui/rainbow-button";
-import { MovingBorderButton } from "@/components/ui/moving-border";
 
 const WEIGHT_OPTIONS = ["0.5 Kg", "1 Kg", "1.5 Kg", "2 Kg"];
 const FLAVOUR_OPTIONS = [
@@ -70,13 +64,6 @@ export default function BakerPOSPage() {
   const [baker, setBaker] = useState<Baker | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Baker Authentication & PIN Terminal State
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [allBakers, setAllBakers] = useState<Baker[]>([]);
-  const [selectedBakerId, setSelectedBakerId] = useState<string>("");
-  const [pinInput, setPinInput] = useState<string>("");
-  const [pinError, setPinError] = useState<string>("");
   
   // Clean 3-Mode Filter: "kitchen" (Active to-bake & ready) vs "waiting" vs "delivered"
   const [statusFilter, setStatusFilter] = useState<"kitchen" | "waiting" | "delivered">("kitchen");
@@ -86,6 +73,7 @@ export default function BakerPOSPage() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
   const [proofOrder, setProofOrder] = useState<Order | null>(null);
+  const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
 
   // Quick Order Preset Fields
   const [weight, setWeight] = useState("1 Kg");
@@ -97,48 +85,34 @@ export default function BakerPOSPage() {
   const [deliveryDate, setDeliveryDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [timeSlot, setTimeSlot] = useState("6:00 PM - 7:00 PM");
   const [customTime, setCustomTime] = useState("");
-  const [allowRushOverride, setAllowRushOverride] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get("token");
 
-    const bakers = getLocalBakers();
-    setAllBakers(bakers);
-
-    let activeBaker: Baker | undefined;
-
-    // 1. If magic token in URL (Direct Link from WhatsApp/QR)
+    let currentToken = urlToken;
     if (urlToken) {
-      activeBaker = getBakerByToken(urlToken);
-      if (activeBaker) {
-        localStorage.setItem("cakeflow_session_baker_id", activeBaker.id);
-        setBaker(activeBaker);
-        setIsAuthenticated(true);
-        setSelectedBakerId(activeBaker.id);
-      }
+      localStorage.setItem("cakeflow_active_token", urlToken);
     } else {
-      // 2. Check active persistent session
-      const savedBakerId = localStorage.getItem("cakeflow_session_baker_id");
-      if (savedBakerId) {
-        activeBaker = bakers.find((b) => b.id === savedBakerId);
-        if (activeBaker) {
-          setBaker(activeBaker);
-          setIsAuthenticated(true);
-          setSelectedBakerId(activeBaker.id);
-        }
-      }
+      currentToken = localStorage.getItem("cakeflow_active_token");
     }
 
-    if (!activeBaker && bakers.length > 0) {
-      setSelectedBakerId(bakers[0].id);
-      setIsAuthenticated(false);
+    const allBakers = getLocalBakers();
+    let currentBaker: Baker | undefined;
+
+    if (currentToken) {
+      currentBaker = getBakerByToken(currentToken);
     }
 
-    if (activeBaker) {
+    if (!currentBaker && allBakers.length > 0) {
+      currentBaker = allBakers[0];
+    }
+
+    if (currentBaker) {
+      setBaker(currentBaker);
       const all = getLocalOrders();
-      setOrders(all.filter((o) => o.baker_id === activeBaker?.id));
-      fetchRemoteOrdersByBaker(activeBaker.id).then((remote) => {
+      setOrders(all.filter((o) => o.baker_id === currentBaker.id));
+      fetchRemoteOrdersByBaker(currentBaker.id).then((remote) => {
         if (remote && remote.length > 0) setOrders(remote);
       });
     }
@@ -146,49 +120,6 @@ export default function BakerPOSPage() {
     const timer = setTimeout(() => setIsLoading(false), 200);
     return () => clearTimeout(timer);
   }, []);
-
-  // Handle PIN entry on lock screen
-  const handlePinDigit = (digit: string) => {
-    if (pinInput.length >= 4) return;
-    const newPin = pinInput + digit;
-    setPinInput(newPin);
-    setPinError("");
-
-    if (newPin.length === 4) {
-      const targetBaker = allBakers.find((b) => b.id === selectedBakerId);
-      const expectedPin = targetBaker?.pin || "1234";
-
-      if (newPin === expectedPin && targetBaker) {
-        setBaker(targetBaker);
-        setIsAuthenticated(true);
-        localStorage.setItem("cakeflow_session_baker_id", targetBaker.id);
-        setPinInput("");
-        const all = getLocalOrders();
-        setOrders(all.filter((o) => o.baker_id === targetBaker.id));
-        fetchRemoteOrdersByBaker(targetBaker.id).then((remote) => {
-          if (remote && remote.length > 0) setOrders(remote);
-        });
-      } else {
-        setPinError("Incorrect PIN. Please try again.");
-        setTimeout(() => {
-          setPinInput("");
-          setPinError("");
-        }, 1200);
-      }
-    }
-  };
-
-  const handlePinBackspace = () => {
-    setPinInput((prev) => prev.slice(0, -1));
-    setPinError("");
-  };
-
-  const handleLockTerminal = () => {
-    localStorage.removeItem("cakeflow_session_baker_id");
-    setIsAuthenticated(false);
-    setPinInput("");
-    setPinError("");
-  };
 
   const refreshOrders = async (bakerId: string) => {
     const all = getLocalOrders();
@@ -317,122 +248,6 @@ export default function BakerPOSPage() {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  // =========================================================================
-  // VIEW: KITCHEN POS SECURITY LOCK SCREEN (4-DIGIT PIN TERMINAL)
-  // =========================================================================
-  if (!isAuthenticated) {
-    const currentBaker = allBakers.find((b) => b.id === selectedBakerId) || allBakers[0];
-
-    return (
-      <div className="min-h-screen bg-zinc-950 text-white flex flex-col justify-between px-6 py-10 max-w-sm mx-auto selection:bg-zinc-800 animate-in fade-in duration-200">
-        {/* Top Header */}
-        <div className="text-center space-y-2 pt-4">
-          <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-zinc-300">
-            <Lock className="w-5 h-5 text-emerald-400" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold tracking-tight text-white">
-              Kitchen Terminal
-            </h1>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              Enter 4-digit PIN to access orders
-            </p>
-          </div>
-
-          {/* Baker Studio Switcher (if multiple bakeries configured) */}
-          {allBakers.length > 1 && (
-            <div className="pt-2">
-              <select
-                value={selectedBakerId}
-                onChange={(e) => {
-                  setSelectedBakerId(e.target.value);
-                  setPinInput("");
-                  setPinError("");
-                }}
-                className="px-3 py-1.5 rounded-xl bg-zinc-900 text-xs font-semibold text-zinc-300 border border-zinc-800 focus:outline-none cursor-pointer"
-              >
-                {allBakers.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-
-        {/* PIN Indicator Dots */}
-        <div className="py-6 space-y-3 text-center">
-          <div className="flex items-center justify-center gap-4">
-            {[0, 1, 2, 3].map((index) => {
-              const isFilled = pinInput.length > index;
-              return (
-                <div
-                  key={index}
-                  className={`w-3.5 h-3.5 rounded-full transition-all duration-200 ${
-                    isFilled
-                      ? "bg-emerald-400 scale-110 shadow-sm shadow-emerald-400/50"
-                      : "bg-zinc-800 border border-zinc-700"
-                  }`}
-                />
-              );
-            })}
-          </div>
-
-          {pinError ? (
-            <p className="text-xs font-semibold text-rose-400 animate-shake">
-              {pinError}
-            </p>
-          ) : (
-            <p className="text-[11px] text-zinc-500 font-mono">
-              Default Studio PIN: 1234
-            </p>
-          )}
-        </div>
-
-        {/* Numeric Keypad */}
-        <div className="space-y-3 pb-4">
-          <div className="grid grid-cols-3 gap-2.5 max-w-[280px] mx-auto">
-            {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((num) => (
-              <button
-                key={num}
-                type="button"
-                onClick={() => handlePinDigit(num)}
-                className="h-15 rounded-2xl bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 active:scale-95 text-xl font-bold text-white transition-all flex items-center justify-center border border-zinc-800/80 shadow-xs"
-              >
-                {num}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => {
-                setPinInput("");
-                setPinError("");
-              }}
-              className="h-15 rounded-2xl bg-transparent hover:bg-zinc-900 text-xs font-semibold text-zinc-400 transition-colors flex items-center justify-center"
-            >
-              Clear
-            </button>
-            <button
-              type="button"
-              onClick={() => handlePinDigit("0")}
-              className="h-15 rounded-2xl bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 active:scale-95 text-xl font-bold text-white transition-all flex items-center justify-center border border-zinc-800/80 shadow-xs"
-            >
-              0
-            </button>
-            <button
-              type="button"
-              onClick={handlePinBackspace}
-              className="h-15 rounded-2xl bg-transparent hover:bg-zinc-900 text-sm font-semibold text-zinc-400 transition-colors flex items-center justify-center active:scale-95"
-            >
-              ⌫
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (!baker) return null;
 
   // Filter calculations
@@ -450,13 +265,6 @@ export default function BakerPOSPage() {
   const todayEarned = orders
     .filter((o) => o.status === "completed")
     .reduce((sum, o) => sum + o.total_price, 0);
-
-  // Daily Oven Capacity Calculations
-  const bookedOnDate = orders.filter(
-    (o) => o.delivery_date === deliveryDate && o.status !== "cancelled"
-  ).length;
-  const maxCapacity = baker.max_daily_cakes || 4;
-  const isDateCapacityFull = bookedOnDate >= maxCapacity;
 
   const getFriendlyDateHeader = (dateStr: string) => {
     const today = new Date().toISOString().split("T")[0];
@@ -494,15 +302,6 @@ export default function BakerPOSPage() {
             <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full">
               ₹{todayEarned.toLocaleString("en-IN")}
             </span>
-
-            <button
-              onClick={handleLockTerminal}
-              className="h-8 px-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold flex items-center gap-1 transition-colors"
-              title="Lock POS Terminal"
-            >
-              <Lock className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Lock</span>
-            </button>
 
             <RainbowButton
               onClick={handleStartNewOrder}
@@ -647,164 +446,210 @@ export default function BakerPOSPage() {
                 return (
                   <div
                     key={ord.id}
-                    className="p-3.5 rounded-2xl bg-[#f4f4f5] flex items-center justify-between gap-3 transition-transform active:scale-[0.99]"
+                    className="p-3.5 rounded-2xl bg-[#f4f4f5] border border-zinc-200/50 flex items-center justify-between gap-3 transition-transform active:scale-[0.99]"
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-bold text-zinc-950 truncate">
-                        #{ord.order_number} • {ord.weight} {ord.flavour}
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-xs font-bold text-zinc-900 bg-white px-2 py-0.5 rounded-md border border-zinc-200/60 shadow-2xs">
+                          #{ord.order_number}
+                        </span>
+                        <span className="text-sm font-bold text-zinc-950 truncate">
+                          {ord.weight} {ord.flavour}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-zinc-500 mt-0.5">
+                      <div className="flex items-center gap-2 text-xs text-zinc-500 mt-1">
                         <span>{getFriendlyDateHeader(ord.delivery_date)}</span>
                         <span>•</span>
                         <span>{ord.time_slot}</span>
                         <span>•</span>
-                        <span className="font-semibold text-zinc-900">₹{ord.total_price}</span>
+                        <span className="font-semibold text-zinc-900">Total ₹{ord.total_price}</span>
+                        <span>•</span>
+                        <span className="text-amber-800 font-semibold bg-amber-50 px-1.5 py-0.5 rounded text-[10px]">
+                          ₹{ord.token_amount} token pending
+                        </span>
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => handleSendViaWhatsApp(ord)}
-                      className="px-3 py-2 rounded-xl bg-white hover:bg-emerald-50 text-emerald-600 transition-colors active:scale-95 flex items-center gap-1.5 shrink-0 text-xs font-semibold shadow-2xs"
-                    >
-                      <svg className="w-3.5 h-3.5 fill-emerald-600" viewBox="0 0 24 24">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                      </svg>
-                      <span>Share</span>
-                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyLink(ord.order_number)}
+                        className="p-2 rounded-xl bg-white hover:bg-zinc-100 text-zinc-600 transition-colors border border-zinc-200/60"
+                        title="Copy Link"
+                      >
+                        {copiedLink ? (
+                          <Check className="w-4 h-4 text-emerald-600" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSendViaWhatsApp(ord)}
+                        className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-colors active:scale-95 flex items-center gap-1.5 text-xs font-semibold shadow-2xs"
+                      >
+                        <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24">
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                        </svg>
+                        <span>Send</span>
+                      </button>
+                    </div>
                   </div>
                 );
               }
 
-              // 3. FLAT CHEF TICKET FOR ACTIVE ORDERS (CONFIRMED / BAKING OR BAKED / READY)
+              // 3. ZERO-COGNITIVE-LOAD KITCHEN TICKET (CONFIRMED / BAKING OR BAKED / READY)
               return (
                 <div
                   key={ord.id}
-                  className="p-4 rounded-2xl bg-[#f4f4f5] space-y-3 transition-all active:scale-[0.99]"
+                  className="p-4 rounded-3xl bg-[#f4f4f5] border border-zinc-200/50 space-y-3 transition-all"
                 >
-                  {/* Top Line: Cake & Status */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="text-base font-bold text-zinc-950 truncate">
-                        {ord.weight} {ord.flavour}
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-zinc-500 mt-0.5">
-                        <span className="font-semibold text-zinc-800">
-                          {ord.is_eggless ? "100% Eggless" : "With Egg"}
-                        </span>
-                        <span>•</span>
-                        <span>{getFriendlyDateHeader(ord.delivery_date)}</span>
-                        <span>•</span>
-                        <span>{ord.time_slot}</span>
-                      </div>
+                  {/* Row 1: Header (Order #, Fulfilment Pill, Ready Time Badge) */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-xs font-bold text-zinc-900 bg-white px-2 py-0.5 rounded-md border border-zinc-200/60 shadow-2xs">
+                        #{ord.order_number}
+                      </span>
+                      <span className="text-[11px] font-semibold text-zinc-600">
+                        {ord.fulfilment_type === "delivery" ? "🛵 Delivery" : "🏬 Pickup"}
+                      </span>
                     </div>
 
+                    {/* Time Pill - Crisp & Prominent */}
+                    <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white text-zinc-900 text-xs font-bold border border-zinc-200/70 shadow-2xs">
+                      <Clock className="w-3.5 h-3.5 text-zinc-500" />
+                      <span>{getFriendlyDateHeader(ord.delivery_date)}, {ord.time_slot}</span>
+                    </div>
+                  </div>
+
+                  {/* Row 2: Cake Title & Diet Tag */}
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-base font-bold text-zinc-950 truncate">
+                      {ord.weight} {ord.flavour}
+                    </h3>
                     <span
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold shrink-0 ${
-                        ord.status === "confirmed"
-                          ? "bg-amber-100 text-amber-900"
-                          : "bg-emerald-100 text-emerald-900"
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${
+                        ord.is_eggless
+                          ? "bg-emerald-100 text-emerald-800"
+                          : "bg-amber-100 text-amber-800"
                       }`}
                     >
-                      {ord.status === "confirmed" ? "In Oven / Baking" : "Ready for Handover"}
+                      {ord.is_eggless ? "Eggless" : "With Egg"}
                     </span>
                   </div>
 
-                  {/* Customer Information (Flat, Plain & Never Truncated) */}
-                  {(ord.customer_name || ord.customer_phone || ord.delivery_address) && (
-                    <div className="text-xs space-y-1 pt-1.5 border-t border-zinc-200/60">
-                      <div className="font-bold text-zinc-950 text-sm">
-                        {ord.customer_name || "Customer"}
-                      </div>
-                      {ord.customer_phone && (
-                        <div>
-                          <a
-                            href={`tel:${ord.customer_phone}`}
-                            className="text-zinc-600 font-mono text-xs hover:text-zinc-950 underline inline-flex items-center gap-1"
-                          >
-                            <Phone className="w-3 h-3 text-zinc-400" />
-                            <span>+{ord.customer_phone}</span>
-                          </a>
-                        </div>
-                      )}
-                      <div className="text-zinc-600 text-xs">
-                        {ord.fulfilment_type === "delivery"
-                          ? `Address: ${ord.delivery_address || "Address provided"}`
-                          : "Self Pickup (Store)"}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Text on Cake (ONLY IF CUSTOMER ACTUALLY WROTE ONE) */}
+                  {/* Row 3: Piped Message (High Contrast & Clear, Only If Exists) */}
                   {isValidCakeMessage(ord.cake_message) && (
-                    <div className="px-3 py-2 rounded-xl bg-white text-xs border border-zinc-200/60 flex items-center gap-2">
+                    <div className="px-3 py-2 rounded-xl bg-white border border-zinc-200/70 text-xs flex items-center gap-2">
                       <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider shrink-0">
-                        Piped:
+                        Piping:
                       </span>
-                      <span className="font-bold text-zinc-950 truncate">
+                      <span className="font-bold text-zinc-950 break-words">
                         "{ord.cake_message}"
                       </span>
                     </div>
                   )}
 
-                  {/* Extra Party Addons (ONLY IF EXISTS) */}
-                  {ord.addons && ord.addons.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-0.5">
-                      {ord.addons.map((a, i) => (
+                  {/* Row 4: Customer Details & 1-Tap Contact Action */}
+                  {(ord.customer_name || ord.customer_phone || ord.delivery_address) && (
+                    <div className="text-xs pt-1.5 border-t border-zinc-200/60 flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <div className="font-semibold text-zinc-950">
+                          {ord.customer_name || "Customer"}
+                        </div>
+                        {ord.delivery_address && ord.fulfilment_type === "delivery" && (
+                          <p className="text-[11px] text-zinc-500 break-words">
+                            Address: {ord.delivery_address}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Quick Contact Buttons (Call & WhatsApp) */}
+                      {ord.customer_phone && (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <a
+                            href={`tel:${ord.customer_phone}`}
+                            className="p-1.5 rounded-lg bg-white hover:bg-zinc-100 border border-zinc-200/60 text-zinc-700 transition-colors"
+                            title="Call Customer"
+                          >
+                            <Phone className="w-3.5 h-3.5" />
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const text = `Hi ${ord.customer_name || ""}! Regarding your cake order #${ord.order_number} from ${baker.name}...`;
+                              window.open(buildWhatsAppLink(ord.customer_phone!, text), "_blank");
+                            }}
+                            className="p-1.5 rounded-lg bg-white hover:bg-emerald-50 border border-zinc-200/60 text-emerald-600 transition-colors"
+                            title="WhatsApp Customer"
+                          >
+                            <svg className="w-3.5 h-3.5 fill-emerald-600" viewBox="0 0 24 24">
+                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Row 5: Reference Photos & Addons (if present) */}
+                  {(((ord.reference_images && ord.reference_images.length > 0) || ord.reference_image) || (ord.addons && ord.addons.length > 0)) && (
+                    <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none pt-0.5">
+                      {(ord.reference_images || (ord.reference_image ? [ord.reference_image] : [])).map((img, i) => (
+                        <div
+                          key={i}
+                          onClick={() => setEnlargedImage(img)}
+                          className="cursor-pointer relative w-12 h-12 rounded-xl overflow-hidden bg-white shrink-0 border border-zinc-200/60 group"
+                        >
+                          <img
+                            src={img}
+                            alt="Ref"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                        </div>
+                      ))}
+                      {ord.addons?.map((a, i) => (
                         <span
                           key={i}
-                          className="px-2.5 py-0.5 rounded-md bg-white text-zinc-800 text-[11px] font-semibold border border-zinc-200/50"
+                          className="px-2 py-1 rounded-lg bg-white text-zinc-800 text-[10px] font-semibold border border-zinc-200/60 shrink-0"
                         >
-                          + {a.name} (₹{a.price})
+                          +{a.name}
                         </span>
                       ))}
                     </div>
                   )}
 
-                  {/* Reference Design Photos (ONLY IF EXISTS) */}
-                  {((ord.reference_images && ord.reference_images.length > 0) || ord.reference_image) && (
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-0.5">
-                      {(ord.reference_images || [ord.reference_image]).map((img, i) => (
-                        <img
-                          key={i}
-                          src={img!}
-                          alt="Design"
-                          className="w-16 h-16 rounded-xl object-cover bg-white shrink-0 border border-zinc-200/60"
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Special Note (ONLY IF EXISTS AND NOT NONE) */}
-                  {ord.special_notes && isValidCakeMessage(ord.special_notes) && (
-                    <p className="text-xs text-zinc-500 italic bg-white/70 p-2 rounded-lg">
-                      Note: "{ord.special_notes}"
-                    </p>
-                  )}
-
-                  {/* Financial Ledger & 1 Clear Action Button */}
-                  <div className="pt-2 border-t border-zinc-200/60 flex items-center justify-between gap-3">
-                    <div className="text-xs">
-                      <div className="text-zinc-400 text-[10px]">Handover Balance</div>
-                      <div className="font-bold text-zinc-950 text-base">₹{ord.balance_amount}</div>
+                  {/* Row 6: Bottom Action Bar */}
+                  <div className="pt-2.5 border-t border-zinc-200/60 flex items-center justify-between gap-3">
+                    <div>
+                      <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold block">
+                        To Collect
+                      </span>
+                      <span className="text-base font-bold text-zinc-950">
+                        ₹{ord.balance_amount}
+                      </span>
                     </div>
 
-                    <div className="flex-1 max-w-[200px] flex justify-end">
+                    <div>
                       {ord.status === "confirmed" && (
-                        <MovingBorderButton
+                        <button
+                          type="button"
                           onClick={() => updateOrderStatus(ord.id, "baked")}
-                          containerClassName="w-full h-10"
-                          className="bg-white text-zinc-950 font-bold text-xs hover:bg-zinc-50"
+                          className="px-4 py-2 rounded-xl bg-zinc-950 hover:bg-zinc-800 active:scale-95 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
                         >
-                          Mark as Baked ✓
-                        </MovingBorderButton>
+                          <span>Mark as Baked</span>
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </button>
                       )}
 
                       {ord.status === "baked" && (
                         <button
+                          type="button"
                           onClick={() => updateOrderStatus(ord.id, "completed")}
-                          className="w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all active:scale-95 shadow-xs"
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
                         >
-                          Collected & Paid ✓
+                          <span>Collected & Paid</span>
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
                         </button>
                       )}
                     </div>
@@ -1037,51 +882,6 @@ export default function BakerPOSPage() {
                           ))}
                         </select>
                       </div>
-
-                      {/* Daily Oven Capacity Guard */}
-                      <div
-                        className={`p-3 rounded-2xl border text-xs flex items-center justify-between transition-all ${
-                          isDateCapacityFull
-                            ? "bg-amber-50/90 border-amber-200 text-amber-900"
-                            : "bg-white border-zinc-200/60 text-zinc-700"
-                        }`}
-                      >
-                        <div>
-                          <div className="font-semibold flex items-center gap-1.5">
-                            {isDateCapacityFull ? (
-                              <span className="text-amber-800 flex items-center gap-1 font-bold">
-                                <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                                Oven Capacity Full ({bookedOnDate}/{maxCapacity})
-                              </span>
-                            ) : (
-                              <span className="text-zinc-900 font-bold">
-                                Oven Slots: {bookedOnDate}/{maxCapacity} booked
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[11px] text-zinc-500 mt-0.5">
-                            {isDateCapacityFull
-                              ? "Daily baking limit reached for this date"
-                              : `${maxCapacity - bookedOnDate} slot(s) remaining`}
-                          </div>
-                        </div>
-
-                        {isDateCapacityFull ? (
-                          <label className="flex items-center gap-1.5 cursor-pointer bg-white px-2.5 py-1.5 rounded-xl border border-amber-300 font-bold text-[11px] text-amber-950 shadow-xs">
-                            <input
-                              type="checkbox"
-                              checked={allowRushOverride}
-                              onChange={(e) => setAllowRushOverride(e.target.checked)}
-                              className="rounded text-zinc-950 focus:ring-0"
-                            />
-                            <span>Rush (+1)</span>
-                          </label>
-                        ) : (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                            Open
-                          </span>
-                        )}
-                      </div>
                     </div>
                   </div>
 
@@ -1089,19 +889,10 @@ export default function BakerPOSPage() {
                   <div className="p-4 border-t border-zinc-100 bg-white space-y-2.5 shrink-0">
                     <button
                       type="button"
-                      disabled={isDateCapacityFull && !allowRushOverride}
                       onClick={finalizeOrder}
-                      className={`w-full py-4 rounded-2xl font-bold text-sm transition-all active:scale-[0.99] flex items-center justify-center gap-2 ${
-                        isDateCapacityFull && !allowRushOverride
-                          ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
-                          : "bg-zinc-950 hover:bg-zinc-800 text-white shadow-xs"
-                      }`}
+                      className="w-full py-4 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-sm transition-all active:scale-[0.99] shadow-xs flex items-center justify-center gap-2"
                     >
-                      {isDateCapacityFull && !allowRushOverride ? (
-                        <span>⚠️ Slot Full (Enable 'Rush' to accept)</span>
-                      ) : (
-                        <span>⚡ Create & Share on WhatsApp</span>
-                      )}
+                      <span>⚡ Create & Share on WhatsApp</span>
                     </button>
                   </div>
                 </>
@@ -1273,6 +1064,28 @@ export default function BakerPOSPage() {
                   Close Proof
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+        {/* Image Enlargement Modal */}
+        {enlargedImage && (
+          <div
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            onClick={() => setEnlargedImage(null)}
+          >
+            <div className="relative max-w-sm w-full">
+              <button
+                type="button"
+                onClick={() => setEnlargedImage(null)}
+                className="absolute -top-10 right-0 w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center text-sm"
+              >
+                ✕
+              </button>
+              <img
+                src={enlargedImage}
+                alt="Enlarged Reference"
+                className="w-full rounded-2xl max-h-[80vh] object-contain"
+              />
             </div>
           </div>
         )}
