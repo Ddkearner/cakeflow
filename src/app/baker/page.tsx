@@ -1265,13 +1265,23 @@ export default function BakerPOSPage() {
                       </div>
                     </div>
 
-                    {/* CARD 3: HANDOVER DATE & TIME */}
-                    <div className="p-3.5 rounded-2xl bg-[#f4f4f5] space-y-2.5">
+                    {/* CARD 3: HANDOVER DATE & TIME (LARGE, EFFORTLESS TOUCH TARGETS) */}
+                    <div className="p-4 rounded-2xl bg-[#f4f4f5] space-y-3.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
                           When Needed
                         </span>
-                        <div className="flex items-center gap-1">
+                        <span className="text-xs font-bold font-mono text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/60">
+                          {timeSlot}
+                        </span>
+                      </div>
+
+                      {/* 1. DATE SELECTION (LARGE CHUNKY TOUCH TARGETS) */}
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] text-zinc-500 font-semibold block">
+                          Delivery / Ready Date
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
                           {["Today", "Tomorrow"].map((label) => {
                             const dStr =
                               label === "Today"
@@ -1280,6 +1290,8 @@ export default function BakerPOSPage() {
                                     .toISOString()
                                     .split("T")[0];
                             const isSel = deliveryDate === dStr;
+                            const dObj = new Date(dStr);
+                            const dayName = dObj.toLocaleDateString("en-IN", { weekday: "short" });
                             return (
                               <button
                                 key={label}
@@ -1288,26 +1300,23 @@ export default function BakerPOSPage() {
                                   playPopSound();
                                   setDeliveryDate(dStr);
                                 }}
-                                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
+                                className={`h-11 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer ${
                                   isSel
-                                    ? "bg-zinc-950 text-white"
-                                    : "bg-white text-zinc-600 hover:text-zinc-950"
+                                    ? "bg-zinc-950 text-white shadow-xs"
+                                    : "bg-white text-zinc-700 hover:text-zinc-950 border border-zinc-200/80"
                                 }`}
                               >
-                                {label}
+                                <span>{label}</span>
+                                <span className={`text-[10px] font-normal ${isSel ? "text-zinc-300" : "text-zinc-400"}`}>
+                                  ({dayName})
+                                </span>
                               </button>
                             );
                           })}
                         </div>
-                      </div>
 
-                      {/* Date & Time Row (Zero Cognitive Fatigue - Auto 1-Hour Window) */}
-                      <div className="grid grid-cols-2 gap-2">
-                        {/* 1. Date Input */}
-                        <div>
-                          <label className="text-[10px] text-zinc-500 font-medium block mb-1">
-                            Date
-                          </label>
+                        {/* Custom Date Input (Full width, big touch target) */}
+                        <div className="relative">
                           <input
                             type="date"
                             value={deliveryDate}
@@ -1316,57 +1325,102 @@ export default function BakerPOSPage() {
                               playPopSound();
                               setDeliveryDate(e.target.value);
                             }}
-                            className="w-full px-3 py-2 rounded-xl bg-white text-xs font-semibold text-zinc-950 focus:outline-none border border-zinc-200/60"
+                            className="w-full h-10 px-3.5 rounded-xl bg-white text-xs font-bold text-zinc-950 focus:outline-none border border-zinc-200/80 cursor-pointer"
                           />
                         </div>
+                      </div>
 
-                        {/* 2. Zero-Fatigue 1-Hour Time Window */}
-                        <div>
-                          <label className="text-[10px] text-zinc-500 font-medium flex items-center justify-between mb-1 truncate">
-                            <span>Time Slot</span>
-                            <span className="text-emerald-700 font-bold font-mono text-[10px]">
-                              {timeSlot}
-                            </span>
-                          </label>
-                          <div className="flex items-center gap-1 bg-white px-2.5 py-1.5 rounded-xl border border-zinc-200/60 focus-within:border-zinc-950 focus-within:ring-1 focus-within:ring-zinc-950/10">
-                            <input
-                              type="number"
-                              min="1"
-                              max="12"
-                              value={selectedHour}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setSelectedHour(val);
-                                const num = parseInt(val, 10);
-                                if (!isNaN(num) && num >= 1 && num <= 12) {
-                                  setTimeSlot(calculateDeliverySlot(num, selectedAmPm));
-                                }
-                              }}
-                              onBlur={() => {
-                                let num = parseInt(selectedHour, 10);
-                                if (isNaN(num) || num < 1) num = 6;
-                                if (num > 12) num = 12;
-                                setSelectedHour(String(num));
-                                setTimeSlot(calculateDeliverySlot(num, selectedAmPm));
-                              }}
-                              placeholder="6"
-                              className="w-8 text-center text-xs font-bold text-zinc-950 bg-transparent focus:outline-none"
-                            />
-                            <span className="text-[11px] font-bold text-zinc-400">:00</span>
-                            <select
-                              value={selectedAmPm}
-                              onChange={(e) => {
+                      {/* 2. TIME SELECTION (CHUNKY STEPPER + AM/PM PILLS - NO KEYBOARD NEEDED) */}
+                      <div className="space-y-1.5 pt-1 border-t border-zinc-200/60">
+                        <label className="text-[11px] text-zinc-500 font-semibold block">
+                          Delivery Time (1-Hour Window)
+                        </label>
+
+                        <div className="grid grid-cols-12 gap-2">
+                          {/* Hour Stepper (Minus - Value - Plus) */}
+                          <div className="col-span-8 flex items-center justify-between bg-white h-12 px-1.5 rounded-xl border border-zinc-200/80 shadow-2xs">
+                            <button
+                              type="button"
+                              onClick={() => {
                                 playPopSound();
-                                const ap = e.target.value as "AM" | "PM";
-                                setSelectedAmPm(ap);
-                                const num = parseInt(selectedHour, 10) || 6;
-                                setTimeSlot(calculateDeliverySlot(num, ap));
+                                const current = parseInt(selectedHour, 10) || 6;
+                                const prev = current === 1 ? 12 : current - 1;
+                                setSelectedHour(String(prev));
+                                setTimeSlot(calculateDeliverySlot(prev, selectedAmPm));
                               }}
-                              className="bg-zinc-100 hover:bg-zinc-200 text-zinc-900 text-[11px] font-bold rounded-lg px-2 py-0.5 focus:outline-none cursor-pointer border-0 ml-auto"
+                              className="w-9 h-9 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-bold text-base flex items-center justify-center transition-all active:scale-90 cursor-pointer select-none"
+                              title="Decrease hour"
                             >
-                              <option value="AM">AM</option>
-                              <option value="PM">PM</option>
-                            </select>
+                              −
+                            </button>
+
+                            <div className="flex-1 flex flex-col items-center justify-center">
+                              <select
+                                value={selectedHour}
+                                onChange={(e) => {
+                                  playPopSound();
+                                  const h = e.target.value;
+                                  setSelectedHour(h);
+                                  setTimeSlot(calculateDeliverySlot(h, selectedAmPm));
+                                }}
+                                className="bg-transparent text-base font-black text-zinc-950 font-mono tracking-tight focus:outline-none cursor-pointer text-center"
+                              >
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
+                                  <option key={num} value={String(num)}>
+                                    {num}:00
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                playPopSound();
+                                const current = parseInt(selectedHour, 10) || 6;
+                                const next = current === 12 ? 1 : current + 1;
+                                setSelectedHour(String(next));
+                                setTimeSlot(calculateDeliverySlot(next, selectedAmPm));
+                              }}
+                              className="w-9 h-9 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-bold text-base flex items-center justify-center transition-all active:scale-90 cursor-pointer select-none"
+                              title="Increase hour"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          {/* AM / PM Toggle (Large fat-finger friendly buttons) */}
+                          <div className="col-span-4 grid grid-cols-2 gap-1 p-1 bg-zinc-200/70 h-12 rounded-xl">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                playPopSound();
+                                setSelectedAmPm("AM");
+                                setTimeSlot(calculateDeliverySlot(selectedHour, "AM"));
+                              }}
+                              className={`h-full rounded-lg text-xs font-bold transition-all flex items-center justify-center active:scale-95 cursor-pointer ${
+                                selectedAmPm === "AM"
+                                  ? "bg-white text-zinc-950 shadow-xs"
+                                  : "text-zinc-600 hover:text-zinc-950"
+                              }`}
+                            >
+                              AM
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                playPopSound();
+                                setSelectedAmPm("PM");
+                                setTimeSlot(calculateDeliverySlot(selectedHour, "PM"));
+                              }}
+                              className={`h-full rounded-lg text-xs font-bold transition-all flex items-center justify-center active:scale-95 cursor-pointer ${
+                                selectedAmPm === "PM"
+                                  ? "bg-white text-zinc-950 shadow-xs"
+                                  : "text-zinc-600 hover:text-zinc-950"
+                              }`}
+                            >
+                              PM
+                            </button>
                           </div>
                         </div>
                       </div>
