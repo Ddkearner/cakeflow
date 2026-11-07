@@ -165,6 +165,7 @@ export default function AdminPage() {
     const days: {
       dateStr: string;
       label: string;
+      shortLabel: string;
       revenue: number;
       ordersCount: number;
     }[] = [];
@@ -190,6 +191,7 @@ export default function AdminPage() {
       days.push({
         dateStr,
         label: `${dayName} ${dayNum}`,
+        shortLabel: `${dayName}`,
         revenue,
         ordersCount: dayOrders.length,
       });
@@ -260,7 +262,7 @@ export default function AdminPage() {
 
             <button
               type="submit"
-              className="w-full py-2 px-3 text-xs font-medium rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 transition-colors"
+              className="w-full py-2.5 px-3 text-xs font-medium rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 transition-colors active:scale-[0.99]"
             >
               Sign in
             </button>
@@ -273,11 +275,11 @@ export default function AdminPage() {
   // Dashboard view
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
-      <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-        {/* Navigation */}
-        <header className="flex items-center justify-between pb-4 border-b border-zinc-200">
+      <div className="max-w-5xl mx-auto px-3.5 sm:px-6 py-5 sm:py-8 space-y-6 sm:space-y-8">
+        {/* Navigation / Header */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-zinc-200">
           <div>
-            <h1 className="text-lg font-semibold text-zinc-900">CakeFlow Admin</h1>
+            <h1 className="text-base sm:text-lg font-semibold text-zinc-900">CakeFlow Admin</h1>
             <p className="text-xs text-zinc-500">
               Overview of bakeries, orders, and sales
             </p>
@@ -286,14 +288,14 @@ export default function AdminPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 text-white text-xs font-medium hover:bg-zinc-800 transition-colors"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg bg-zinc-900 text-white text-xs font-medium hover:bg-zinc-800 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
-              Add Baker
+              <span>Add Baker</span>
             </button>
             <button
               onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-600 text-xs font-medium hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-600 text-xs font-medium hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
               title="Sign out"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -303,42 +305,42 @@ export default function AdminPage() {
         </header>
 
         {/* 4 Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="rounded-xl border border-zinc-200 bg-white p-4">
-            <div className="text-xs font-medium text-zinc-500">Total Revenue</div>
-            <div className="text-xl font-semibold text-zinc-900 mt-1">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+          <div className="rounded-xl border border-zinc-200 bg-white p-3.5 sm:p-4">
+            <div className="text-[11px] sm:text-xs font-medium text-zinc-500">Total Revenue</div>
+            <div className="text-lg sm:text-xl font-semibold text-zinc-900 mt-1">
               ₹{stats.totalRevenue.toLocaleString("en-IN")}
             </div>
           </div>
 
-          <div className="rounded-xl border border-zinc-200 bg-white p-4">
-            <div className="text-xs font-medium text-zinc-500">Advance Collected</div>
-            <div className="text-xl font-semibold text-zinc-900 mt-1">
+          <div className="rounded-xl border border-zinc-200 bg-white p-3.5 sm:p-4">
+            <div className="text-[11px] sm:text-xs font-medium text-zinc-500">Advance Collected</div>
+            <div className="text-lg sm:text-xl font-semibold text-zinc-900 mt-1">
               ₹{stats.advanceCollected.toLocaleString("en-IN")}
             </div>
           </div>
 
-          <div className="rounded-xl border border-zinc-200 bg-white p-4">
-            <div className="text-xs font-medium text-zinc-500">Total Orders</div>
-            <div className="text-xl font-semibold text-zinc-900 mt-1">
+          <div className="rounded-xl border border-zinc-200 bg-white p-3.5 sm:p-4">
+            <div className="text-[11px] sm:text-xs font-medium text-zinc-500">Total Orders</div>
+            <div className="text-lg sm:text-xl font-semibold text-zinc-900 mt-1">
               {stats.totalOrders}
             </div>
           </div>
 
-          <div className="rounded-xl border border-zinc-200 bg-white p-4">
-            <div className="text-xs font-medium text-zinc-500">Active Bakeries</div>
-            <div className="text-xl font-semibold text-zinc-900 mt-1">
+          <div className="rounded-xl border border-zinc-200 bg-white p-3.5 sm:p-4">
+            <div className="text-[11px] sm:text-xs font-medium text-zinc-500">Active Bakeries</div>
+            <div className="text-lg sm:text-xl font-semibold text-zinc-900 mt-1">
               {stats.totalBakers}
             </div>
           </div>
         </div>
 
         {/* Past 7 Days Chart */}
-        <div className="rounded-xl border border-zinc-200 bg-white p-5 space-y-4">
-          <div className="flex items-baseline justify-between">
+        <div className="rounded-xl border border-zinc-200 bg-white p-4 sm:p-5 space-y-3 sm:space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
             <div>
               <h2 className="text-sm font-semibold text-zinc-900">Past 7 Days</h2>
-              <p className="text-xs text-zinc-500 mt-0.5">
+              <p className="text-xs text-zinc-500">
                 Daily sales across all bakeries
               </p>
             </div>
@@ -347,8 +349,24 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="pt-4">
-            <div className="h-36 flex items-end justify-between gap-3">
+          {/* Selected day mobile banner */}
+          {selectedDayIndex !== null && chartData.days[selectedDayIndex] && (
+            <div className="p-2 sm:p-2.5 rounded-lg bg-zinc-100 text-xs flex items-center justify-between">
+              <span className="font-medium text-zinc-800">
+                {chartData.days[selectedDayIndex].label}:
+              </span>
+              <span className="text-zinc-900 font-semibold">
+                ₹{chartData.days[selectedDayIndex].revenue.toLocaleString("en-IN")}{" "}
+                <span className="font-normal text-zinc-500">
+                  ({chartData.days[selectedDayIndex].ordersCount}{" "}
+                  {chartData.days[selectedDayIndex].ordersCount === 1 ? "order" : "orders"})
+                </span>
+              </span>
+            </div>
+          )}
+
+          <div className="pt-2 sm:pt-4">
+            <div className="h-32 sm:h-36 flex items-end justify-between gap-1.5 sm:gap-3">
               {chartData.days.map((d, idx) => {
                 const heightPercent =
                   chartData.maxRevenue > 0 && d.revenue > 0
@@ -363,15 +381,15 @@ export default function AdminPage() {
                     onClick={() => setSelectedDayIndex(isSelected ? null : idx)}
                     className="flex-1 flex flex-col items-center h-full justify-end cursor-pointer group"
                   >
-                    <div className="text-[11px] font-medium text-zinc-600 mb-1.5 transition-opacity duration-150">
+                    <div className="text-[10px] sm:text-[11px] font-medium text-zinc-600 mb-1 transition-opacity">
                       {d.ordersCount > 0 ? (
                         <span>₹{d.revenue}</span>
                       ) : (
-                        <span className="opacity-0 group-hover:opacity-100 text-zinc-400">₹0</span>
+                        <span className="opacity-0 group-hover:opacity-100 text-zinc-400">0</span>
                       )}
                     </div>
 
-                    <div className="w-full max-w-[42px] bg-zinc-100 rounded-md h-full flex flex-col justify-end overflow-hidden">
+                    <div className="w-full max-w-[38px] sm:max-w-[42px] bg-zinc-100 rounded-md h-full flex flex-col justify-end overflow-hidden">
                       <div
                         style={{ height: `${heightPercent}%` }}
                         className={`w-full rounded-md transition-all duration-200 ${
@@ -384,8 +402,9 @@ export default function AdminPage() {
                       />
                     </div>
 
-                    <div className="text-[11px] text-zinc-500 mt-2 font-medium">
-                      {d.label}
+                    <div className="text-[10px] sm:text-[11px] text-zinc-500 mt-2 font-medium">
+                      <span className="sm:hidden">{d.shortLabel}</span>
+                      <span className="hidden sm:inline">{d.label}</span>
                     </div>
                   </div>
                 );
@@ -419,19 +438,19 @@ export default function AdminPage() {
               return (
                 <div
                   key={baker.id}
-                  className="rounded-xl border border-zinc-200 bg-white p-4 flex flex-col justify-between gap-4"
+                  className="rounded-xl border border-zinc-200 bg-white p-3.5 sm:p-4 flex flex-col justify-between gap-3.5"
                 >
                   <div className="space-y-2">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="text-sm font-semibold text-zinc-900">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-zinc-900 truncate">
                           {baker.name}
                         </div>
-                        <div className="text-xs text-zinc-400 font-mono">
+                        <div className="text-xs text-zinc-400 font-mono truncate">
                           /{baker.slug}
                         </div>
                       </div>
-                      <div className="text-xs text-zinc-500 text-right">
+                      <div className="text-xs text-zinc-500 text-right shrink-0">
                         <span className="font-medium text-zinc-900">{bakerOrders.length}</span> orders ·{" "}
                         <span className="font-medium text-zinc-900">₹{bakerRevenue}</span>
                       </div>
@@ -447,7 +466,7 @@ export default function AdminPage() {
                   <div className="pt-3 border-t border-zinc-100 flex items-center justify-between gap-2">
                     <button
                       onClick={() => copyMagicLink(baker.secret_token, baker.id)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-white text-xs font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-white text-xs font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
                     >
                       {copiedId === baker.id ? (
                         <>
@@ -462,7 +481,7 @@ export default function AdminPage() {
                       )}
                     </button>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1 shrink-0">
                       <a
                         href={`/baker?token=${baker.secret_token}`}
                         target="_blank"
@@ -487,7 +506,7 @@ export default function AdminPage() {
           </div>
         </section>
 
-        {/* Orders Table */}
+        {/* Orders Section */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-zinc-900">
@@ -495,7 +514,97 @@ export default function AdminPage() {
             </h2>
           </div>
 
-          <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden">
+          {/* Mobile Orders List (Card layout for phones - NO horizontal scrolling) */}
+          <div className="space-y-2.5 md:hidden">
+            {orders.length === 0 ? (
+              <div className="rounded-xl border border-zinc-200 bg-white p-8 text-center text-xs text-zinc-400">
+                No orders yet
+              </div>
+            ) : (
+              orders.map((order) => {
+                const bakerObj = bakers.find((b) => b.id === order.baker_id);
+                return (
+                  <div
+                    key={order.id}
+                    className="rounded-xl border border-zinc-200 bg-white p-3.5 space-y-2.5"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-mono text-xs font-semibold text-zinc-900">
+                          {order.order_number}
+                        </span>
+                        <span className="text-xs text-zinc-300">·</span>
+                        <span className="text-xs text-zinc-600 truncate">
+                          {bakerObj ? bakerObj.name : "Studio"}
+                        </span>
+                      </div>
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium shrink-0 ${
+                          order.status === "completed"
+                            ? "bg-zinc-100 text-zinc-800"
+                            : order.status === "baked"
+                            ? "bg-amber-50 text-amber-800"
+                            : order.status === "confirmed"
+                            ? "bg-emerald-50 text-emerald-800"
+                            : order.status === "cancelled"
+                            ? "bg-red-50 text-red-700"
+                            : "bg-zinc-100 text-zinc-600"
+                        }`}
+                      >
+                        {order.status === "pending_token"
+                          ? "Pending token"
+                          : order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-zinc-100">
+                      <div>
+                        <div className="font-medium text-zinc-900">
+                          {order.customer_name || "Guest"}
+                        </div>
+                        {order.customer_phone && (
+                          <div className="text-[11px] text-zinc-400 font-mono">
+                            {order.customer_phone}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold text-zinc-900">
+                          ₹{order.total_price}
+                        </div>
+                        <div className="text-[11px] text-zinc-400">
+                          Token: ₹{order.token_amount}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-zinc-600 pt-2 border-t border-zinc-100">
+                      <div className="truncate pr-2">
+                        <span className="font-medium text-zinc-900">{order.flavour}</span>
+                        <span className="text-zinc-400"> ({order.weight} · {order.is_eggless ? "Eggless" : "Egg"})</span>
+                      </div>
+                      <a
+                        href={`/o/${order.order_number.replace("#", "")}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-700 bg-zinc-100 px-2 py-1 rounded hover:bg-zinc-200 transition-colors shrink-0"
+                      >
+                        <span>Receipt</span>
+                        <ExternalLink className="w-3 h-3 text-zinc-500" />
+                      </a>
+                    </div>
+
+                    <div className="text-[11px] text-zinc-400">
+                      Delivery: {order.delivery_date} · {order.time_slot}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop Orders Table (hidden on mobile, visible on tablet & desktop) */}
+          <div className="hidden md:block rounded-xl border border-zinc-200 bg-white overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-zinc-50 text-zinc-500 font-medium border-b border-zinc-200">
@@ -590,8 +699,8 @@ export default function AdminPage() {
 
         {/* Add Baker Modal */}
         {showAddModal && (
-          <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-5 shadow-lg space-y-4">
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <div className="w-full max-w-md rounded-t-2xl sm:rounded-2xl border border-zinc-200 bg-white p-5 shadow-xl space-y-4 max-h-[92vh] overflow-y-auto">
               <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
                 <h3 className="text-sm font-semibold text-zinc-900">Add Bakery</h3>
                 <button
@@ -616,7 +725,7 @@ export default function AdminPage() {
                         setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "-"));
                       }
                     }}
-                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-zinc-900 focus:outline-none focus:border-zinc-400"
+                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-zinc-900 focus:outline-none focus:border-zinc-400 text-sm"
                   />
                 </div>
 
@@ -629,7 +738,7 @@ export default function AdminPage() {
                       placeholder="creme-studio"
                       value={slug}
                       onChange={(e) => setSlug(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-zinc-900 font-mono focus:outline-none focus:border-zinc-400"
+                      className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-zinc-900 font-mono focus:outline-none focus:border-zinc-400 text-sm"
                     />
                   </div>
                   <div>
@@ -641,7 +750,7 @@ export default function AdminPage() {
                       step={50}
                       value={tokenAmount}
                       onChange={(e) => setTokenAmount(Number(e.target.value))}
-                      className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-zinc-900 focus:outline-none focus:border-zinc-400"
+                      className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-zinc-900 focus:outline-none focus:border-zinc-400 text-sm"
                     />
                   </div>
                 </div>
@@ -654,7 +763,7 @@ export default function AdminPage() {
                     placeholder="919876543210"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-zinc-900 font-mono focus:outline-none focus:border-zinc-400"
+                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-zinc-900 font-mono focus:outline-none focus:border-zinc-400 text-sm"
                   />
                 </div>
 
@@ -666,7 +775,7 @@ export default function AdminPage() {
                     placeholder="baker@upi"
                     value={upiId}
                     onChange={(e) => setUpiId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-zinc-900 font-mono focus:outline-none focus:border-zinc-400"
+                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-zinc-900 font-mono focus:outline-none focus:border-zinc-400 text-sm"
                   />
                 </div>
 
@@ -678,7 +787,7 @@ export default function AdminPage() {
                     placeholder="Pickup address"
                     value={pickupAddress}
                     onChange={(e) => setPickupAddress(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-zinc-900 focus:outline-none focus:border-zinc-400 resize-none"
+                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-zinc-900 focus:outline-none focus:border-zinc-400 resize-none text-sm"
                   />
                 </div>
 
@@ -686,13 +795,13 @@ export default function AdminPage() {
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="px-3 py-1.5 text-zinc-600 hover:text-zinc-900 font-medium"
+                    className="px-3 py-2 text-zinc-600 hover:text-zinc-900 font-medium"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-3.5 py-1.5 rounded-lg bg-zinc-900 text-white font-medium hover:bg-zinc-800 transition-colors"
+                    className="px-4 py-2 rounded-lg bg-zinc-900 text-white font-medium hover:bg-zinc-800 transition-colors"
                   >
                     Save Baker
                   </button>
