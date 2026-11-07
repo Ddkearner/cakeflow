@@ -619,11 +619,10 @@ export default function BakerPOSPage() {
 
             <RainbowButton
               onClick={handleStartNewOrder}
-              variant="outline"
               size="sm"
-              className="h-8 rounded-xl px-3 text-xs font-bold text-zinc-950 bg-white border border-zinc-200/80 shadow-xs active:scale-95 transition-transform"
+              className="h-8 rounded-xl px-3 text-xs font-semibold active:scale-95 transition-transform"
             >
-              <Plus className="w-3.5 h-3.5 text-zinc-950" />
+              <Plus className="w-3.5 h-3.5" />
               <span>New Order</span>
             </RainbowButton>
           </div>
