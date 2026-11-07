@@ -35,7 +35,97 @@ import {
   RotateCcw,
   AlertCircle,
   Smartphone,
+  QrCode,
 } from "lucide-react";
+
+// =============================================================================
+// OFFICIAL VECTOR LOGOS (UNSLOPPED & AUTHENTIC)
+// =============================================================================
+function GPayLogo({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M23.75 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+        fill="#4285F4"
+      />
+      <path
+        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+        fill="#34A853"
+      />
+      <path
+        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.14-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+        fill="#FBBC05"
+      />
+      <path
+        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+        fill="#EA4335"
+      />
+    </svg>
+  );
+}
+
+function PhonePeLogo({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 36 36" fill="none">
+      <rect width="36" height="36" rx="8" fill="#5F259F" />
+      <path
+        d="M20.2 11h3.3v2.6h-3.3v2.4c2.3.2 4 1.3 4 3.6 0 2.6-2.2 4.2-5.3 4.2h-1.6v5.4h-3.3V11h6.2zm-2.9 9.2h1.4c1.3 0 2.2-.6 2.2-1.6 0-1.1-.9-1.5-2.2-1.5h-1.4v3.1z"
+        fill="#FFFFFF"
+      />
+      <path
+        d="M23.1 8.2l-5.6 5.4h3.7l4.2-4.1c-.7-.5-1.5-.9-2.3-1.3z"
+        fill="#00D2A0"
+      />
+    </svg>
+  );
+}
+
+function PaytmLogo({ className = "h-3.5 w-auto" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 68 20" fill="none">
+      <path
+        d="M4.6 2.5h6.2c3 0 4.9 1.5 4.9 4.1 0 2.6-1.9 4.2-4.9 4.2H7.9v6.2H4.6V2.5zm3.3 5.9h2.6c1.3 0 2.1-.7 2.1-1.8 0-1.1-.8-1.8-2.1-1.8H7.9v3.6z"
+        fill="#002E6E"
+      />
+      <path
+        d="M22.5 7.8v9.2h-3.1v-1.4c-.7 1-1.8 1.6-3.1 1.6-2.4 0-4.1-1.7-4.1-4.2 0-2.5 1.7-4.2 4.1-4.2 1.3 0 2.4.6 3.1 1.6V7.8h3.1zm-3.1 5.3c0-1.3-.9-2.1-2.1-2.1-1.2 0-2.1.8-2.1 2.1s.9 2.1 2.1 2.1c1.2 0 2.1-.8 2.1-2.1z"
+        fill="#002E6E"
+      />
+      <path
+        d="M32.2 7.8l-4.1 10.4c-.8 1.9-1.9 2.8-3.7 2.8-.5 0-1-.1-1.4-.3V18c.3.1.7.2 1 .2.8 0 1.4-.3 1.8-1.4l.3-.7-3.8-8.3h3.3l2.3 5.8 2.2-5.8h3.4z"
+        fill="#002E6E"
+      />
+      <path
+        d="M37.4 4.5v3.3h2.9v2.3h-2.9v4.5c0 .7.3 1 1 1 .7 0 1.2-.2 1.5-.3v2.2c-.6.3-1.4.4-2.2.4-2.2 0-3.5-1.2-3.5-3.3V10.1h-1.8V7.8h1.8V4.5h3.2z"
+        fill="#00BAF2"
+      />
+      <path
+        d="M41.8 7.8h3.1v1.4c.7-1 1.9-1.7 3.2-1.7 1.4 0 2.6.8 3.1 2 .8-1.2 2-2 3.5-2 2.2 0 3.7 1.5 3.7 4.1v5.4h-3.1v-4.8c0-1.1-.6-1.7-1.5-1.7-.9 0-1.6.7-1.6 1.8v4.7h-3.1v-4.8c0-1.1-.6-1.7-1.5-1.7-.9 0-1.6.7-1.6 1.8v4.7h-3.1V7.8z"
+        fill="#00BAF2"
+      />
+    </svg>
+  );
+}
+
+function UpiLogo({ className = "h-3.5 w-auto" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 64 20" fill="none">
+      <path
+        d="M9.5 2.5L2 17.5h3.9l1.5-3.5h5.5l.6 3.5h4L14.5 2.5H9.5zm.9 8.5l1.6-4.5 1 4.5h-2.6z"
+        fill="#334155"
+      />
+      <path
+        d="M19.5 2.5v9.8c0 3.2 2.2 5.2 5.5 5.2s5.5-2 5.5-5.2V2.5h-3.5v9.5c0 1.4-.9 2.2-2 2.2s-2-.8-2-2.2V2.5h-3.5z"
+        fill="#097939"
+      />
+      <path
+        d="M34 2.5v15h3.5v-4.8h4.2c3.5 0 5.8-2.2 5.8-5.1 0-3-2.3-5.1-5.8-5.1H34zm3.5 3h4c1.5 0 2.3.8 2.3 2.1 0 1.3-.8 2.1-2.3 2.1h-4V5.5z"
+        fill="#ED752E"
+      />
+      <path d="M50 2.5v15h3.5V2.5H50z" fill="#097939" />
+    </svg>
+  );
+}
 
 export default function CustomerCheckoutPage() {
   const params = useParams();
@@ -553,14 +643,10 @@ export default function CustomerCheckoutPage() {
               VIEW: PHONEPE-STYLE CLEAN PAYMENT SUCCESS & RECEIPT
               =================================================================== */
           <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300 ease-out">
-            {/* PhonePe Celebratory Hero */}
+            {/* Celebratory Hero (Dignified & Crafted) */}
             <div className="flex flex-col items-center text-center pt-4 pb-2 space-y-2 print:hidden">
-              {/* Animated Success Icon with Pulse Ring */}
-              <div className="relative flex items-center justify-center">
-                <div className="w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/25 animate-in zoom-in-75 duration-300 ease-out">
-                  <Check className="w-9 h-9 stroke-[3]" />
-                </div>
-                <div className="absolute w-20 h-20 rounded-full border-2 border-emerald-500/25 animate-ping opacity-30 pointer-events-none" />
+              <div className="w-14 h-14 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20">
+                <Check className="w-7 h-7 stroke-[3]" />
               </div>
 
               {/* Amount & Status Headline */}
@@ -569,8 +655,8 @@ export default function CustomerCheckoutPage() {
                   ₹{order.token_amount}
                 </div>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                  Booking Advance Confirmed
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Booking Advance Confirmed</span>
                 </div>
                 <p className="text-xs text-zinc-500 pt-0.5">
                   Slot locked with <span className="font-semibold text-zinc-800">{baker.name}</span>
@@ -1147,51 +1233,51 @@ export default function CustomerCheckoutPage() {
       )}
 
       {/* =======================================================================
-          UNIFIED 1-TAP UPI PAYMENT & VERIFICATION SHEET
+          UNIFIED 1-TAP UPI PAYMENT & VERIFICATION SHEET (UNSLOPPED & AUTHENTIC)
           ======================================================================= */}
       {showVerificationSheet && !isPaid && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-t-3xl sm:rounded-3xl p-5 max-w-sm w-full space-y-3.5 shadow-2xl relative animate-in slide-in-from-bottom-6 duration-200 max-h-[92vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl p-5 max-w-sm w-full space-y-3.5 shadow-2xl relative animate-in slide-in-from-bottom-4 duration-150 max-h-[92vh] overflow-y-auto">
             {/* Dismiss button */}
             <button
               onClick={() => {
                 playTapSound();
                 setShowVerificationSheet(false);
               }}
-              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-zinc-100 text-zinc-500 hover:text-zinc-950 flex items-center justify-center text-xs z-10"
+              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-zinc-100 text-zinc-500 hover:text-zinc-950 flex items-center justify-center text-xs z-10 transition-colors"
             >
               ✕
             </button>
 
-            {/* Header Badge & Title */}
+            {/* Header: Quiet, calm, deliberate */}
             <div className="text-center space-y-1 pt-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-bold border border-emerald-200/60">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Zero Fee Direct UPI</span>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-100 text-zinc-600 text-[10px] font-semibold uppercase tracking-wider">
+                <span>Direct UPI Transfer</span>
               </div>
-              <h3 className="text-lg font-bold text-zinc-950">
+              <h3 className="text-xl font-bold text-zinc-950 tracking-tight">
                 Pay ₹{tokenAmount} Advance Token
               </h3>
               <p className="text-xs text-zinc-500 max-w-xs mx-auto truncate">
-                Direct to <span className="font-semibold text-zinc-800">{baker.name}</span>
+                Direct to <span className="font-semibold text-zinc-900">{baker.name}</span>
               </p>
             </div>
 
             {/* Segmented Mode Switcher: Apps vs QR */}
-            <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-zinc-100 text-xs font-semibold">
+            <div className="grid grid-cols-2 p-1 rounded-xl bg-zinc-100 text-xs font-medium">
               <button
                 type="button"
                 onClick={() => {
                   playTapSound();
                   setPaySheetTab("apps");
                 }}
-                className={`py-1.5 rounded-lg transition-all ${
+                className={`py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
                   paySheetTab === "apps"
-                    ? "bg-white text-zinc-950 shadow-xs"
+                    ? "bg-white text-zinc-950 font-bold shadow-xs"
                     : "text-zinc-500 hover:text-zinc-900"
                 }`}
               >
-                ⚡ UPI Apps
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>UPI Apps</span>
               </button>
               <button
                 type="button"
@@ -1199,13 +1285,14 @@ export default function CustomerCheckoutPage() {
                   playTapSound();
                   setPaySheetTab("qr");
                 }}
-                className={`py-1.5 rounded-lg transition-all ${
+                className={`py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
                   paySheetTab === "qr"
-                    ? "bg-white text-zinc-950 shadow-xs"
+                    ? "bg-white text-zinc-950 font-bold shadow-xs"
                     : "text-zinc-500 hover:text-zinc-900"
                 }`}
               >
-                📷 Scan QR Code
+                <QrCode className="w-3.5 h-3.5" />
+                <span>Scan QR</span>
               </button>
             </div>
 
@@ -1224,15 +1311,15 @@ export default function CustomerCheckoutPage() {
                       playTapSound();
                       showToast("Opening Google Pay...", "info");
                     }}
-                    className="p-3 rounded-2xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 flex flex-col items-center justify-center text-center transition-all active:scale-95 group"
+                    className="p-3 rounded-2xl bg-white border border-zinc-200/90 hover:border-zinc-950 flex items-center gap-2.5 transition-all active:scale-[0.98] shadow-2xs group"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-white border border-zinc-200 flex items-center justify-center font-bold text-xs text-blue-600 shadow-2xs group-hover:scale-105 transition-transform">
-                      GPay
+                    <div className="w-9 h-9 rounded-xl bg-zinc-50 border border-zinc-100 flex items-center justify-center shrink-0">
+                      <GPayLogo className="w-5 h-5" />
                     </div>
-                    <span className="text-xs font-bold text-zinc-900 mt-1.5">
-                      Google Pay
-                    </span>
-                    <span className="text-[10px] text-zinc-400">Pay ₹{tokenAmount}</span>
+                    <div className="min-w-0 text-left">
+                      <div className="text-xs font-bold text-zinc-950 truncate">Google Pay</div>
+                      <div className="text-[10px] text-zinc-400">Pay ₹{tokenAmount}</div>
+                    </div>
                   </a>
 
                   {/* PhonePe */}
@@ -1242,15 +1329,15 @@ export default function CustomerCheckoutPage() {
                       playTapSound();
                       showToast("Opening PhonePe...", "info");
                     }}
-                    className="p-3 rounded-2xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 flex flex-col items-center justify-center text-center transition-all active:scale-95 group"
+                    className="p-3 rounded-2xl bg-white border border-zinc-200/90 hover:border-zinc-950 flex items-center gap-2.5 transition-all active:scale-[0.98] shadow-2xs group"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs group-hover:scale-105 transition-transform">
-                      पे
+                    <div className="w-9 h-9 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center shrink-0">
+                      <PhonePeLogo className="w-5 h-5" />
                     </div>
-                    <span className="text-xs font-bold text-zinc-900 mt-1.5">
-                      PhonePe
-                    </span>
-                    <span className="text-[10px] text-zinc-400">Pay ₹{tokenAmount}</span>
+                    <div className="min-w-0 text-left">
+                      <div className="text-xs font-bold text-zinc-950 truncate">PhonePe</div>
+                      <div className="text-[10px] text-zinc-400">Pay ₹{tokenAmount}</div>
+                    </div>
                   </a>
 
                   {/* Paytm */}
@@ -1260,15 +1347,15 @@ export default function CustomerCheckoutPage() {
                       playTapSound();
                       showToast("Opening Paytm...", "info");
                     }}
-                    className="p-3 rounded-2xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 flex flex-col items-center justify-center text-center transition-all active:scale-95 group"
+                    className="p-3 rounded-2xl bg-white border border-zinc-200/90 hover:border-zinc-950 flex items-center gap-2.5 transition-all active:scale-[0.98] shadow-2xs group"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-[#002e6e] text-white flex items-center justify-center font-bold text-[10px] shadow-2xs group-hover:scale-105 transition-transform">
-                      Paytm
+                    <div className="w-9 h-9 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center shrink-0">
+                      <PaytmLogo className="h-3 w-auto" />
                     </div>
-                    <span className="text-xs font-bold text-zinc-900 mt-1.5">
-                      Paytm
-                    </span>
-                    <span className="text-[10px] text-zinc-400">Pay ₹{tokenAmount}</span>
+                    <div className="min-w-0 text-left">
+                      <div className="text-xs font-bold text-zinc-950 truncate">Paytm</div>
+                      <div className="text-[10px] text-zinc-400">Pay ₹{tokenAmount}</div>
+                    </div>
                   </a>
 
                   {/* Universal UPI (CRED, BHIM, etc.) */}
@@ -1276,23 +1363,23 @@ export default function CustomerCheckoutPage() {
                     href={getUpiUrl("universal")}
                     onClick={() => {
                       playTapSound();
-                      showToast("Opening Any UPI App...", "info");
+                      showToast("Opening UPI Chooser...", "info");
                     }}
-                    className="p-3 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white flex flex-col items-center justify-center text-center transition-all active:scale-95 group shadow-xs"
+                    className="p-3 rounded-2xl bg-white border border-zinc-200/90 hover:border-zinc-950 flex items-center gap-2.5 transition-all active:scale-[0.98] shadow-2xs group"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-bold text-xs text-emerald-400 group-hover:scale-105 transition-transform">
-                      ⚡
+                    <div className="w-9 h-9 rounded-xl bg-zinc-50 border border-zinc-100 flex items-center justify-center shrink-0">
+                      <UpiLogo className="h-2.5 w-auto" />
                     </div>
-                    <span className="text-xs font-bold text-white mt-1.5">
-                      Any UPI / BHIM
-                    </span>
-                    <span className="text-[10px] text-zinc-400">CRED & Others</span>
+                    <div className="min-w-0 text-left">
+                      <div className="text-xs font-bold text-zinc-950 truncate">Other UPI</div>
+                      <div className="text-[10px] text-zinc-400">CRED / BHIM</div>
+                    </div>
                   </a>
                 </div>
               </div>
             ) : (
               /* TAB 2: HIGH-CONTRAST SCAN QR CODE */
-              <div className="text-center space-y-2.5">
+              <div className="text-center space-y-2.5 py-1">
                 <div className="p-3 bg-white border border-zinc-200 rounded-2xl inline-block shadow-2xs">
                   <img
                     src={qrCodeUrl}
@@ -1302,23 +1389,23 @@ export default function CustomerCheckoutPage() {
                 </div>
 
                 <div className="space-y-0.5">
-                  <div className="text-xs text-zinc-400 font-mono">
+                  <div className="text-xs text-zinc-500 font-mono font-medium">
                     {baker.upi_id}
                   </div>
                   <button
                     type="button"
                     onClick={handleCopyUpi}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:underline pt-0.5"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-700 hover:text-zinc-950 transition-colors pt-0.5"
                   >
-                    <Copy className="w-3 h-3" />
-                    <span>{copiedUpi ? "Copied!" : "Copy Baker UPI ID"}</span>
+                    <Copy className="w-3 h-3 text-zinc-400" />
+                    <span>{copiedUpi ? "Copied! ✓" : "Copy UPI ID"}</span>
                   </button>
                 </div>
               </div>
             )}
 
             {/* STEP 2: REAL 12-DIGIT UTR VERIFICATION ENGINE */}
-            <div className="p-3 rounded-2xl bg-zinc-50 border border-zinc-200/80 space-y-2">
+            <div className="p-3.5 rounded-2xl bg-[#f4f4f5] border border-zinc-200/80 space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-zinc-900">
                   Step 2: Enter 12-digit UTR
@@ -1326,9 +1413,9 @@ export default function CustomerCheckoutPage() {
                 <button
                   type="button"
                   onClick={handlePasteClipboard}
-                  className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-md transition-colors"
+                  className="text-[11px] font-semibold text-zinc-700 hover:text-zinc-950 flex items-center gap-1 bg-white hover:bg-zinc-100 px-2 py-0.5 rounded-md border border-zinc-200/80 transition-colors"
                 >
-                  <Copy className="w-3 h-3" />
+                  <Copy className="w-3 h-3 text-zinc-400" />
                   <span>{pastedSuccess ? "Pasted! ✓" : "Paste from Clipboard"}</span>
                 </button>
               </div>
@@ -1363,7 +1450,7 @@ export default function CustomerCheckoutPage() {
               type="button"
               disabled={isVerifyingUtr}
               onClick={handleVerifyUtr}
-              className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+              className="w-full py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 active:scale-[0.99] text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-xs disabled:opacity-50"
             >
               {isVerifyingUtr ? (
                 <>
@@ -1372,7 +1459,7 @@ export default function CustomerCheckoutPage() {
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="w-4 h-4 text-white" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                   <span>Verify & Confirm Booking ✓</span>
                 </>
               )}
