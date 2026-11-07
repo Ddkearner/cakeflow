@@ -58,6 +58,9 @@ export default function CustomerCheckoutPage() {
 
   // Essential Form Fields (Pre-populated from cache if present)
   const [cakeMessage, setCakeMessage] = useState(initialOrder?.cake_message || "");
+  const [showCakeMessageInput, setShowCakeMessageInput] = useState(
+    Boolean(initialOrder?.cake_message)
+  );
   const [referenceImages, setReferenceImages] = useState<string[]>(() => {
     if (!initialOrder) return [];
     if (initialOrder.reference_images && initialOrder.reference_images.length > 0) {
@@ -115,6 +118,7 @@ export default function CustomerCheckoutPage() {
       if (found) {
         setOrder(found);
         setCakeMessage(found.cake_message || "");
+        if (found.cake_message) setShowCakeMessageInput(true);
         if (found.reference_images && found.reference_images.length > 0) {
           setReferenceImages(found.reference_images);
         } else if (found.reference_image) {
@@ -214,6 +218,12 @@ export default function CustomerCheckoutPage() {
 
   const handlePayAndConfirm = () => {
     if (!order || !baker || isPaying) return;
+
+    if (fulfilmentType === "delivery" && !deliveryAddress.trim()) {
+      showToast("Please enter complete delivery address", "error");
+      return;
+    }
+
     setIsPaying(true);
     showToast("Locking your slot & opening UPI...", "info");
 
@@ -583,164 +593,242 @@ export default function CustomerCheckoutPage() {
               </div>
             </div>
 
-            {/* CARD 2: BOOKING DETAILS (ZERO COGNITIVE LOAD) */}
+            {/* CARD 2: HANDOVER & DISPATCH DETAILS */}
             <div className="p-4 rounded-3xl bg-[#f4f4f5] space-y-3">
               {/* Handover Toggle: Pickup vs Delivery */}
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-zinc-200/70">
-                  <button
-                    type="button"
-                    onClick={() => setFulfilmentType("pickup")}
-                    className={`py-2 rounded-lg text-xs font-semibold transition-all ${
-                      fulfilmentType === "pickup"
-                        ? "bg-white text-zinc-950 shadow-xs"
-                        : "text-zinc-600 hover:text-zinc-950"
-                    }`}
-                  >
-                    Self Pickup
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFulfilmentType("delivery")}
-                    className={`py-2 rounded-lg text-xs font-semibold transition-all ${
-                      fulfilmentType === "delivery"
-                        ? "bg-white text-zinc-950 shadow-xs"
-                        : "text-zinc-600 hover:text-zinc-950"
-                    }`}
-                  >
-                    Home Delivery
-                  </button>
-                </div>
+              <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-zinc-200/70">
+                <button
+                  type="button"
+                  onClick={() => setFulfilmentType("pickup")}
+                  className={`py-2 rounded-lg text-xs font-semibold transition-all ${
+                    fulfilmentType === "pickup"
+                      ? "bg-white text-zinc-950 shadow-xs"
+                      : "text-zinc-600 hover:text-zinc-950"
+                  }`}
+                >
+                  Self Pickup
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFulfilmentType("delivery")}
+                  className={`py-2 rounded-lg text-xs font-semibold transition-all ${
+                    fulfilmentType === "delivery"
+                      ? "bg-white text-zinc-950 shadow-xs"
+                      : "text-zinc-600 hover:text-zinc-950"
+                  }`}
+                >
+                  Home Delivery
+                </button>
+              </div>
 
-                {fulfilmentType === "pickup" ? (
-                  <div className="px-1 text-xs text-zinc-600 flex items-start gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-zinc-400 shrink-0 mt-0.5" />
-                    <span className="leading-snug">{baker.pickup_address}</span>
+              {/* Contextual Handover Content */}
+              {fulfilmentType === "delivery" ? (
+                /* DELIVERY BLOCK: Exactly what baker needs for dispatch! */
+                <div className="p-3.5 rounded-2xl bg-white border border-zinc-200/80 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-zinc-900 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      Delivery Address & Contact
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-medium">For delivery rider</span>
                   </div>
-                ) : (
+
                   <input
                     type="text"
-                    placeholder="Enter complete delivery address"
+                    required
+                    placeholder="Complete Delivery Address (Flat/House, Landmark)"
                     value={deliveryAddress}
                     onChange={(e) => setDeliveryAddress(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white text-zinc-950 text-xs placeholder-zinc-400 focus:outline-none border border-transparent focus:border-zinc-300 font-medium"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 border border-zinc-200/80 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none focus:border-zinc-400 font-medium"
                   />
-                )}
-              </div>
 
-              {/* Grouped Customer Info Block (Single unified container) */}
-              <div className="rounded-2xl border border-zinc-200/80 bg-white overflow-hidden">
-                <div className="grid grid-cols-2 divide-x divide-zinc-100">
-                  <input
-                    type="text"
-                    placeholder="Your Name"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none font-medium bg-transparent"
-                  />
-                  <input
-                    type="tel"
-                    maxLength={10}
-                    placeholder="WhatsApp No."
-                    value={customerPhone}
-                    onChange={(e) =>
-                      setCustomerPhone(e.target.value.replace(/\D/g, ""))
-                    }
-                    className="w-full px-3.5 py-2.5 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none font-medium bg-transparent font-mono"
-                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="Receiver's Name"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 border border-zinc-200/80 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none focus:border-zinc-400 font-medium"
+                    />
+                    <input
+                      type="tel"
+                      maxLength={10}
+                      placeholder="Contact No. for Delivery"
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ""))}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 border border-zinc-200/80 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none focus:border-zinc-400 font-mono font-medium"
+                    />
+                  </div>
                 </div>
-                <div className="border-t border-zinc-100">
-                  <input
-                    type="text"
-                    maxLength={40}
-                    placeholder="Text on cake (e.g. Happy Birthday Rohan) — optional"
-                    value={cakeMessage}
-                    onChange={(e) => setCakeMessage(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none font-medium bg-transparent"
-                  />
-                </div>
-              </div>
-
-              {/* Extras Row: Photo Reference & Party Items as Clean Dual Chips */}
-              <div className="flex items-center gap-2 pt-0.5">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleImageChange}
-                />
-
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`flex-1 py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
-                    referenceImages.length > 0
-                      ? "bg-zinc-950 text-white border-zinc-950"
-                      : "bg-white text-zinc-700 border-zinc-200/80 hover:bg-zinc-50"
-                  }`}
-                >
-                  <Camera className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">
-                    {referenceImages.length > 0
-                      ? `${referenceImages.length} Photo Added`
-                      : "Reference Photo"}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowAddonsSection(!showAddonsSection)}
-                  className={`flex-1 py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
-                    selectedAddons.length > 0 || showAddonsSection
-                      ? "bg-zinc-950 text-white border-zinc-950"
-                      : "bg-white text-zinc-700 border-zinc-200/80 hover:bg-zinc-50"
-                  }`}
-                >
-                  <Plus className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">
-                    {selectedAddons.length > 0
-                      ? `${selectedAddons.length} Added`
-                      : "Party Items"}
-                  </span>
-                </button>
-              </div>
-
-              {/* Reference Images Thumbnails (if uploaded) */}
-              {referenceImages.length > 0 && (
-                <div className="flex items-center gap-2 overflow-x-auto pt-1 pb-0.5 scrollbar-none">
-                  {referenceImages.map((imgUrl, idx) => (
-                    <div
-                      key={idx}
-                      className="relative w-14 h-14 rounded-xl overflow-hidden bg-white shrink-0 border border-zinc-200/80"
-                    >
-                      <img
-                        src={imgUrl}
-                        alt={`Ref ${idx + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeReferenceImage(idx)}
-                        className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/80 text-white flex items-center justify-center text-[9px]"
-                      >
-                        ✕
-                      </button>
+              ) : (
+                /* PICKUP BLOCK: Zero address burden on customer! */
+                <div className="p-3.5 rounded-2xl bg-white border border-zinc-200/80 space-y-2">
+                  <div className="flex items-start gap-2 text-xs">
+                    <MapPin className="w-3.5 h-3.5 text-zinc-400 shrink-0 mt-0.5" />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-zinc-900 text-xs">
+                        Pickup from:
+                      </div>
+                      <div className="text-zinc-600 text-xs leading-relaxed mt-0.5">
+                        {baker.pickup_address}
+                      </div>
+                      {baker.google_maps_url && (
+                        <a
+                          href={baker.google_maps_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 mt-1 hover:underline"
+                        >
+                          <span>Open in Google Maps</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
                     </div>
-                  ))}
-                  {referenceImages.length < 4 && (
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-14 h-14 rounded-xl bg-white border border-dashed border-zinc-300 flex flex-col items-center justify-center text-zinc-400 hover:text-zinc-900 shrink-0"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span className="text-[8px] font-medium">Add</span>
-                    </button>
-                  )}
+                  </div>
+
+                  {/* Clean Optional Booking Name (Single line) */}
+                  <div className="pt-2 border-t border-zinc-100 flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="Your Name (for cake box tag)"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      className="flex-1 px-3 py-2 rounded-xl bg-zinc-50 border border-zinc-200/60 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none font-medium"
+                    />
+                    <input
+                      type="tel"
+                      maxLength={10}
+                      placeholder="WhatsApp No."
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ""))}
+                      className="w-32 px-3 py-2 rounded-xl bg-zinc-50 border border-zinc-200/60 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none font-mono font-medium"
+                    />
+                  </div>
                 </div>
               )}
+
+              {/* CAKE CUSTOMIZATION BLOCK (SMART & NON-INTRUSIVE) */}
+              <div className="p-3.5 rounded-2xl bg-white border border-zinc-200/80 space-y-2.5">
+                {/* Text on Cake (Either active input or 1-tap chip) */}
+                {showCakeMessageInput || cakeMessage ? (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px] text-zinc-500 font-medium">
+                      <span>Piped Message on Cake:</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCakeMessage("");
+                          setShowCakeMessageInput(false);
+                        }}
+                        className="text-zinc-400 hover:text-zinc-600 text-[10px]"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      maxLength={40}
+                      autoFocus={!cakeMessage}
+                      placeholder="e.g. Happy Birthday Rohan"
+                      value={cakeMessage}
+                      onChange={(e) => setCakeMessage(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 border border-zinc-200/80 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none focus:border-zinc-400 font-medium"
+                    />
+                  </div>
+                ) : null}
+
+                {/* Clean 1-Tap Feature Chips */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {!showCakeMessageInput && !cakeMessage && (
+                    <button
+                      type="button"
+                      onClick={() => setShowCakeMessageInput(true)}
+                      className="px-2.5 py-1.5 rounded-xl border border-zinc-200/80 hover:bg-zinc-50 text-[11px] font-medium text-zinc-700 flex items-center gap-1.5 transition-colors"
+                    >
+                      <Plus className="w-3 h-3 text-zinc-500" />
+                      <span>Text on Cake</span>
+                    </button>
+                  )}
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleImageChange}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`px-2.5 py-1.5 rounded-xl border text-[11px] font-medium flex items-center gap-1.5 transition-colors ${
+                      referenceImages.length > 0
+                        ? "bg-zinc-950 text-white border-zinc-950"
+                        : "border-zinc-200/80 hover:bg-zinc-50 text-zinc-700"
+                    }`}
+                  >
+                    <Camera className="w-3 h-3 shrink-0" />
+                    <span>
+                      {referenceImages.length > 0
+                        ? `${referenceImages.length} Photo Added`
+                        : "Reference Photo"}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowAddonsSection(!showAddonsSection)}
+                    className={`px-2.5 py-1.5 rounded-xl border text-[11px] font-medium flex items-center gap-1.5 transition-colors ${
+                      selectedAddons.length > 0 || showAddonsSection
+                        ? "bg-zinc-950 text-white border-zinc-950"
+                        : "border-zinc-200/80 hover:bg-zinc-50 text-zinc-700"
+                    }`}
+                  >
+                    <Plus className="w-3 h-3 shrink-0" />
+                    <span>
+                      {selectedAddons.length > 0
+                        ? `${selectedAddons.length} Party Items`
+                        : "Party Items"}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Uploaded Reference Photos Thumbnail Strip */}
+                {referenceImages.length > 0 && (
+                  <div className="flex items-center gap-2 overflow-x-auto pt-1 pb-0.5 scrollbar-none">
+                    {referenceImages.map((imgUrl, idx) => (
+                      <div
+                        key={idx}
+                        className="relative w-14 h-14 rounded-xl overflow-hidden bg-zinc-100 shrink-0 border border-zinc-200"
+                      >
+                        <img
+                          src={imgUrl}
+                          alt={`Design ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeReferenceImage(idx)}
+                          className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/80 text-white flex items-center justify-center text-[9px]"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                    {referenceImages.length < 4 && (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-14 h-14 rounded-xl bg-zinc-50 border border-dashed border-zinc-300 flex flex-col items-center justify-center text-zinc-400 hover:text-zinc-900 shrink-0"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span className="text-[8px] font-medium">Add</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Party Addons Section (Expands smoothly on demand) */}
               {showAddonsSection && (
