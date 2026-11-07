@@ -80,6 +80,8 @@ export default function BakerPOSPage() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
   const [proofOrder, setProofOrder] = useState<Order | null>(null);
+  const [enlargedKitchenImage, setEnlargedKitchenImage] = useState<string | null>(null);
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
 
   // Quick Order Preset Fields
   const [weight, setWeight] = useState("1 Kg");
@@ -521,28 +523,23 @@ export default function BakerPOSPage() {
         {/* =======================================================================
             COMPACT HIGH-UTILITY TOP APP BAR (SINGLE ROW - ZERO SCREEN WASTE)
             ======================================================================= */}
-        <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-zinc-100 px-5 py-3.5 flex items-center justify-between">
-          <div className="min-w-0 pr-3">
-            <h1 className="text-base font-bold text-zinc-950 tracking-tight flex items-center gap-1.5 truncate">
-              <span>{baker.name}</span>
-              <span className="w-3.5 h-3.5 rounded-full bg-zinc-950 text-white flex items-center justify-center text-[8px] font-bold shrink-0">
-                ✓
-              </span>
-            </h1>
-            <p className="text-[11px] text-zinc-400 truncate mt-0.5">
-              {baker.pickup_address || "Indiranagar, Bengaluru"}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full">
+        <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-zinc-100 px-4 py-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold tracking-tight text-zinc-950 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              CakeFlow
+            </span>
+            <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full font-mono">
               ₹{todayEarned.toLocaleString("en-IN")}
             </span>
+          </div>
 
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
               onClick={() => {
                 setIsEditingFlavour(false);
+                setIsEditingAddon(false);
                 setShowSettingsModal(true);
               }}
               className="w-8 h-8 rounded-xl bg-[#f4f4f5] hover:bg-zinc-200 text-zinc-700 flex items-center justify-center transition-colors active:scale-95"
@@ -565,7 +562,7 @@ export default function BakerPOSPage() {
         {/* =======================================================================
             STREAMLINED 3-SEGMENT KITCHEN FILTER BAR (ZERO SCROLL, ZERO FATIGUE)
             ======================================================================= */}
-        <div className="px-5 pt-3 pb-2 sticky top-[57px] z-10 bg-white border-b border-zinc-100/60">
+        <div className="px-4 pt-2.5 pb-2 sticky top-[45px] z-10 bg-white border-b border-zinc-100/60">
           <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-zinc-100 text-xs font-semibold">
             <button
               onClick={() => setStatusFilter("kitchen")}
@@ -809,15 +806,29 @@ export default function BakerPOSPage() {
 
                   {/* Reference Design Photos (ONLY IF EXISTS) */}
                   {((ord.reference_images && ord.reference_images.length > 0) || ord.reference_image) && (
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-0.5">
-                      {(ord.reference_images || [ord.reference_image]).map((img, i) => (
-                        <img
-                          key={i}
-                          src={img!}
-                          alt="Design"
-                          className="w-16 h-16 rounded-xl object-cover bg-white shrink-0 border border-zinc-200/60"
-                        />
-                      ))}
+                    <div className="space-y-1 pt-0.5">
+                      <div className="flex items-center justify-between text-[10px] text-zinc-400 font-medium">
+                        <span>Design Reference Photos</span>
+                        <span className="text-zinc-400">tap to zoom</span>
+                      </div>
+                      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                        {(ord.reference_images || [ord.reference_image]).map((img, i) => (
+                          <div
+                            key={i}
+                            onClick={() => {
+                              setEnlargedKitchenImage(img!);
+                              setZoomLevel(1);
+                            }}
+                            className="cursor-zoom-in relative w-16 h-16 rounded-xl overflow-hidden bg-white shrink-0 border border-zinc-200/60 hover:ring-2 hover:ring-zinc-950 transition-all group"
+                          >
+                            <img
+                              src={img!}
+                              alt="Design Reference"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            />
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -1196,12 +1207,20 @@ export default function BakerPOSPage() {
                     </span>
                     <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                       {(proofOrder.reference_images || [proofOrder.reference_image]).map((img, i) => (
-                        <img
+                        <div
                           key={i}
-                          src={img!}
-                          alt="Customer Design"
-                          className="w-20 h-20 rounded-xl object-cover bg-white shrink-0 border border-zinc-200"
-                        />
+                          onClick={() => {
+                            setEnlargedKitchenImage(img!);
+                            setZoomLevel(1);
+                          }}
+                          className="cursor-zoom-in relative w-20 h-20 rounded-xl overflow-hidden bg-white shrink-0 border border-zinc-200 hover:ring-2 hover:ring-zinc-950 transition-all group"
+                        >
+                          <img
+                            src={img!}
+                            alt="Customer Design"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -1708,6 +1727,89 @@ export default function BakerPOSPage() {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+        {/* =======================================================================
+            FULLSCREEN INTERACTIVE IMAGE ZOOM LIGHTBOX (PIPING & DETAIL INSPECTOR)
+            ======================================================================= */}
+        {enlargedKitchenImage && (
+          <div
+            className="fixed inset-0 bg-black/95 backdrop-blur-md z-[60] flex flex-col justify-between p-4 animate-in fade-in duration-200 select-none"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setEnlargedKitchenImage(null);
+                setZoomLevel(1);
+              }
+            }}
+          >
+            {/* Top Controls Bar */}
+            <div className="flex items-center justify-between text-white shrink-0 z-10">
+              <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setZoomLevel((prev) => Math.max(1, prev - 0.5))}
+                  className="w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center font-bold"
+                  title="Zoom Out"
+                >
+                  -
+                </button>
+                <span className="font-mono font-bold text-[11px] min-w-[36px] text-center">
+                  {Math.round(zoomLevel * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setZoomLevel((prev) => Math.min(3.5, prev + 0.5))}
+                  className="w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center font-bold"
+                  title="Zoom In"
+                >
+                  +
+                </button>
+                {zoomLevel !== 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setZoomLevel(1)}
+                    className="ml-1 text-[10px] text-zinc-300 hover:text-white underline font-medium"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEnlargedKitchenImage(null);
+                  setZoomLevel(1);
+                }}
+                className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center text-sm font-bold transition-colors"
+                title="Close Viewer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Centered Zoomable Image Canvas */}
+            <div
+              className="flex-1 flex items-center justify-center overflow-auto p-2 my-2 cursor-zoom-in"
+              onClick={() => {
+                setZoomLevel((prev) => (prev >= 2 ? 1 : prev + 0.75));
+              }}
+            >
+              <img
+                src={enlargedKitchenImage}
+                alt="Enlarged Cake Design Reference"
+                style={{
+                  transform: `scale(${zoomLevel})`,
+                  transition: "transform 0.2s cubic-bezier(0.2, 0, 0, 1)",
+                }}
+                className="max-h-[75vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl origin-center pointer-events-auto"
+              />
+            </div>
+
+            {/* Bottom Tip Bar */}
+            <div className="text-center text-[11px] text-zinc-400 font-medium shrink-0">
+              Tap image to toggle zoom • Use + / - to inspect piping & details
             </div>
           </div>
         )}
