@@ -142,6 +142,22 @@ export default function BakerPOSPage() {
   const [expandedWaitingOrderId, setExpandedWaitingOrderId] = useState<string | null>(null);
   const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
 
+  // Edit Order Modal State
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [editWeight, setEditWeight] = useState("1 Kg");
+  const [editFlavour, setEditFlavour] = useState("");
+  const [editIsEggless, setEditIsEggless] = useState(true);
+  const [editTotalPrice, setEditTotalPrice] = useState<number>(0);
+  const [editTokenAmount, setEditTokenAmount] = useState<number>(0);
+  const [editDeliveryDate, setEditDeliveryDate] = useState("");
+  const [editTimeSlot, setEditTimeSlot] = useState("");
+  const [editCakeMessage, setEditCakeMessage] = useState("");
+  const [editSpecialNotes, setEditSpecialNotes] = useState("");
+  const [editCustomerName, setEditCustomerName] = useState("");
+  const [editCustomerPhone, setEditCustomerPhone] = useState("");
+  const [editFulfilmentType, setEditFulfilmentType] = useState<"pickup" | "delivery">("pickup");
+  const [editDeliveryAddress, setEditDeliveryAddress] = useState("");
+
   // Quick Order Preset Fields
   const [weight, setWeight] = useState("1 Kg");
   const [flavour, setFlavour] = useState("Chocolate Truffle");
@@ -442,6 +458,7 @@ export default function BakerPOSPage() {
           ? { ...m, name: trimmed, prices: { ...flavourPricesInput } }
           : m
       );
+      showToast("Flavour Updated ✓", "success");
     } else {
       const newItem: FlavourItem = {
         id: `f-${Date.now()}`,
@@ -449,6 +466,7 @@ export default function BakerPOSPage() {
         prices: { ...flavourPricesInput },
       };
       updated = [...menuItems, newItem];
+      showToast("New Flavour Added ✓", "success");
     }
     setMenuItems(updated);
     setIsEditingFlavour(false);
@@ -462,7 +480,7 @@ export default function BakerPOSPage() {
 
   const handleDeleteFlavour = (id: string) => {
     if (menuItems.length <= 1) {
-      alert("You must keep at least 1 flavour in your menu!");
+      showToast("You must keep at least 1 flavour in your menu!", "error");
       return;
     }
     const updated = menuItems.filter((m) => m.id !== id);
@@ -472,6 +490,7 @@ export default function BakerPOSPage() {
       setBaker(updatedBaker);
       saveLocalBaker(updatedBaker);
     }
+    showToast("Flavour Deleted ✓", "info");
   };
 
   const handleOpenAddAddon = () => {
@@ -499,6 +518,7 @@ export default function BakerPOSPage() {
           ? { ...a, name: trimmed, price: Number(addonPriceInput) || 0 }
           : a
       );
+      showToast("Party Item Updated ✓", "success");
     } else {
       const newItem: AddonItem = {
         id: `a-${Date.now()}`,
@@ -506,6 +526,7 @@ export default function BakerPOSPage() {
         price: Number(addonPriceInput) || 0,
       };
       updated = [...addonItems, newItem];
+      showToast("New Party Item Added ✓", "success");
     }
     setAddonItems(updated);
     setIsEditingAddon(false);
@@ -533,6 +554,7 @@ export default function BakerPOSPage() {
       setBaker(updatedBaker);
       saveLocalBaker(updatedBaker);
     }
+    showToast("Party Item Deleted ✓", "info");
   };
 
   const handleSaveStoreProfile = () => {
@@ -550,9 +572,58 @@ export default function BakerPOSPage() {
     };
     setBaker(updatedBaker);
     saveLocalBaker(updatedBaker);
-    showToast("Settings & Menu Saved! ✓", "success");
+    showToast("Profile & Settings Saved ✓", "success");
     setSettingsSavedToast(true);
     setTimeout(() => setSettingsSavedToast(false), 2000);
+  };
+
+  const handleOpenEditOrder = (ord: Order) => {
+    playTapSound();
+    setEditingOrder(ord);
+    setEditWeight(ord.weight);
+    setEditFlavour(ord.flavour);
+    setEditIsEggless(ord.is_eggless);
+    setEditTotalPrice(ord.total_price);
+    setEditTokenAmount(ord.token_amount);
+    setEditDeliveryDate(ord.delivery_date);
+    setEditTimeSlot(ord.time_slot);
+    setEditCakeMessage(ord.cake_message || "");
+    setEditSpecialNotes(ord.special_notes || "");
+    setEditCustomerName(ord.customer_name || "");
+    setEditCustomerPhone(ord.customer_phone || "");
+    setEditFulfilmentType(ord.fulfilment_type || "pickup");
+    setEditDeliveryAddress(ord.delivery_address || "");
+  };
+
+  const handleSaveEditedOrder = () => {
+    if (!editingOrder) return;
+    playSuccessSound();
+    const balance = Math.max(0, editTotalPrice - editTokenAmount);
+    const updated: Order = {
+      ...editingOrder,
+      weight: editWeight,
+      flavour: editFlavour.trim() || editingOrder.flavour,
+      is_eggless: editIsEggless,
+      total_price: editTotalPrice,
+      token_amount: editTokenAmount,
+      balance_amount: balance,
+      delivery_date: editDeliveryDate,
+      time_slot: editTimeSlot.trim() || editingOrder.time_slot,
+      cake_message: editCakeMessage.trim() || undefined,
+      special_notes: editSpecialNotes.trim() || undefined,
+      customer_name: editCustomerName.trim() || undefined,
+      customer_phone: editCustomerPhone.trim() || undefined,
+      fulfilment_type: editFulfilmentType,
+      delivery_address:
+        editFulfilmentType === "delivery" ? editDeliveryAddress.trim() : undefined,
+    };
+
+    // 1. Optimistic React State
+    setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+    // 2. Local Storage + Cloud sync
+    saveLocalOrder(updated);
+    setEditingOrder(null);
+    showToast(`Order #${updated.order_number} Updated ✓`, "success");
   };
 
   const handleCloseWizard = () => {
@@ -654,9 +725,12 @@ export default function BakerPOSPage() {
     const targetId = orderToDelete.id;
     setOrders((prev) => prev.filter((o) => o.id !== targetId));
     deleteLocalOrder(targetId);
-    showToast("Order Link Deleted ✓", "info");
+    showToast("Order Deleted ✓", "info");
     setOrderToDelete(null);
     setExpandedWaitingOrderId(null);
+    if (proofOrder?.id === targetId) {
+      setProofOrder(null);
+    }
   };
 
   if (!baker) return null;
@@ -722,12 +796,12 @@ export default function BakerPOSPage() {
       <div className="shrink-0 bg-white border-b border-zinc-100 z-20 w-full max-w-xl mx-auto">
         {/* App Bar */}
         <header className="px-4 py-2.5 flex items-center justify-between border-b border-zinc-100/60">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold tracking-tight text-zinc-950 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              CakeFlow
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-sm font-bold tracking-tight text-zinc-950 flex items-center gap-1.5 truncate max-w-[150px] sm:max-w-[200px]">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+              <span className="truncate">{baker?.name || "CakeFlow"}</span>
             </span>
-            <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full font-mono">
+            <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full font-mono shrink-0">
               ₹{todayEarned.toLocaleString("en-IN")}
             </span>
           </div>
@@ -760,6 +834,31 @@ export default function BakerPOSPage() {
             </RainbowButton>
           </div>
         </header>
+
+        {/* 1-Tap Notice if UPI ID or Phone is unconfigured / default demo */}
+        {(!baker.upi_id || baker.upi_id === "sugarbloom@okhdfcbank" || !baker.phone || baker.phone === "919876543210") && (
+          <div className="px-4 pt-2">
+            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center justify-between gap-2 text-xs text-amber-900">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span className="font-semibold text-[11px] truncate">
+                  Setup your real UPI ID & WhatsApp to receive payments
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  playTapSound();
+                  setSettingsTab("store");
+                  setShowSettingsModal(true);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-amber-900 hover:bg-amber-800 text-white font-bold text-[10px] shrink-0 active:scale-95 transition-colors cursor-pointer"
+              >
+                Setup Store
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 3-Segment Switcher with Sliding Motion Pill */}
         <div className="px-4 py-2 bg-white">
@@ -958,6 +1057,19 @@ export default function BakerPOSPage() {
                           </button>
                         </div>
 
+                        {/* Edit Waiting Order */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditOrder(ord);
+                          }}
+                          className="w-full py-2 px-3 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-98 border border-zinc-200/60"
+                        >
+                          <Edit2 className="w-3.5 h-3.5 text-zinc-500" />
+                          <span>Edit Order Specs / Pricing</span>
+                        </button>
+
                         {/* Baker Manual Payment Confirmation Bypass */}
                         <button
                           type="button"
@@ -1016,7 +1128,7 @@ export default function BakerPOSPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <div className="text-base font-bold text-zinc-950 truncate">
-                          {ord.weight} {ord.flavour}
+                          #{ord.order_number} • {ord.weight} {ord.flavour}
                         </div>
                         <div className="flex items-center gap-1.5 text-xs text-zinc-500 mt-0.5">
                           <span className="font-semibold text-zinc-800">
@@ -1029,15 +1141,39 @@ export default function BakerPOSPage() {
                         </div>
                       </div>
 
-                      <span
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold shrink-0 ${
-                          ord.status === "confirmed"
-                            ? "bg-amber-100 text-amber-900"
-                            : "bg-emerald-100 text-emerald-900"
-                        }`}
-                      >
-                        {ord.status === "confirmed" ? "In Oven / Baking" : "Ready for Handover"}
-                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditOrder(ord);
+                          }}
+                          className="w-7 h-7 rounded-lg bg-white hover:bg-zinc-200 text-zinc-600 flex items-center justify-center transition-colors border border-zinc-200/60"
+                          title="Edit order specs"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteOrder(ord);
+                          }}
+                          className="w-7 h-7 rounded-lg bg-white hover:bg-red-50 text-red-500 flex items-center justify-center transition-colors border border-zinc-200/60"
+                          title="Cancel / Delete order"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                            ord.status === "confirmed"
+                              ? "bg-amber-100 text-amber-900"
+                              : "bg-emerald-100 text-emerald-900"
+                          }`}
+                        >
+                          {ord.status === "confirmed" ? "In Oven / Baking" : "Ready for Handover"}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Customer Information (Flat, Plain & Never Truncated) */}
@@ -1740,18 +1876,32 @@ export default function BakerPOSPage() {
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="w-full py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs flex items-center justify-center gap-2 active:scale-98 shadow-xs"
+                  className="w-full py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs flex items-center justify-center gap-2 active:scale-98 shadow-xs cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
                   <span>Download / Print Proof PDF</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setProofOrder(null)}
-                  className="w-full py-2 text-xs font-semibold text-zinc-400 hover:text-zinc-950"
-                >
-                  Close Proof
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (proofOrder) {
+                        handleDeleteOrder(proofOrder);
+                      }
+                    }}
+                    className="py-2.5 px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-98 border border-red-200/60 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Record</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProofOrder(null)}
+                    className="flex-1 py-2 text-xs font-semibold text-zinc-400 hover:text-zinc-950 cursor-pointer"
+                  >
+                    Close Proof
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -2331,10 +2481,10 @@ export default function BakerPOSPage() {
 
               <div className="space-y-1">
                 <h3 className="text-base font-bold text-zinc-950">
-                  Delete Order Link?
+                  Delete Order?
                 </h3>
                 <p className="text-xs text-zinc-500 leading-relaxed">
-                  #{orderToDelete.order_number} ({orderToDelete.weight} {orderToDelete.flavour}) will be permanently deleted.
+                  #{orderToDelete.order_number} ({orderToDelete.weight} {orderToDelete.flavour}) will be permanently deleted from records.
                 </p>
               </div>
 
@@ -2355,6 +2505,263 @@ export default function BakerPOSPage() {
                   className="w-full py-2.5 rounded-2xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-semibold text-xs transition-all active:scale-98 cursor-pointer"
                 >
                   Keep Order
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* =======================================================================
+            FULL REAL-WORLD ORDER EDIT MODAL (MUTATES STATE + LOCALSTORAGE + CLOUD)
+            ======================================================================= */}
+        {editingOrder && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+            <motion.div
+              initial={{ y: 50, opacity: 0, scale: 0.97 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 50, opacity: 0, scale: 0.97 }}
+              transition={{ type: "spring", stiffness: 350, damping: 28 }}
+              className="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-2xl relative overflow-hidden"
+            >
+              <div className="w-10 h-1 bg-zinc-200 rounded-full mx-auto mt-2.5 mb-0.5 sm:hidden shrink-0" />
+              <div className="px-5 py-4 border-b border-zinc-100 flex items-center justify-between bg-white shrink-0">
+                <div>
+                  <h2 className="text-base font-bold text-zinc-950">
+                    Edit Order #{editingOrder.order_number}
+                  </h2>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">
+                    Modify cake details, price, time slot or customer info
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingOrder(null)}
+                  className="w-8 h-8 rounded-full bg-[#f4f4f5] hover:bg-zinc-200 text-zinc-600 flex items-center justify-center transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-5 overflow-y-auto space-y-4 flex-1">
+                {/* Weight & Flavour */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-1">
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                      Weight
+                    </label>
+                    <select
+                      value={editWeight}
+                      onChange={(e) => setEditWeight(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl bg-[#f4f4f5] text-zinc-950 font-bold text-xs focus:outline-none border border-zinc-200/60"
+                    >
+                      {WEIGHT_OPTIONS.map((w) => (
+                        <option key={w} value={w}>
+                          {w}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                      Flavour
+                    </label>
+                    <input
+                      type="text"
+                      value={editFlavour}
+                      onChange={(e) => setEditFlavour(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#f4f4f5] text-zinc-950 font-bold text-xs focus:outline-none border border-zinc-200/60"
+                    />
+                  </div>
+                </div>
+
+                {/* Eggless Switcher */}
+                <div className="grid grid-cols-2 gap-2 p-1 bg-[#f4f4f5] rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setEditIsEggless(true)}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+                      editIsEggless
+                        ? "bg-white text-emerald-800 shadow-xs ring-1 ring-emerald-500/30"
+                        : "text-zinc-500"
+                    }`}
+                  >
+                    100% Eggless
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditIsEggless(false)}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+                      !editIsEggless
+                        ? "bg-white text-amber-900 shadow-xs ring-1 ring-amber-500/30"
+                        : "text-zinc-500"
+                    }`}
+                  >
+                    Contains Egg
+                  </button>
+                </div>
+
+                {/* Total Price & Token Advance */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                      Total Price (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={editTotalPrice}
+                      onChange={(e) => setEditTotalPrice(Number(e.target.value) || 0)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#f4f4f5] text-zinc-950 text-xs font-bold focus:outline-none border border-zinc-200/60"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                      Token Advance (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={editTokenAmount}
+                      onChange={(e) => setEditTokenAmount(Number(e.target.value) || 0)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#f4f4f5] text-zinc-950 text-xs font-bold focus:outline-none border border-zinc-200/60"
+                    />
+                  </div>
+                </div>
+
+                {/* Date & Time Slot */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                      Handover Date
+                    </label>
+                    <input
+                      type="date"
+                      value={editDeliveryDate}
+                      onChange={(e) => setEditDeliveryDate(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#f4f4f5] text-zinc-950 text-xs font-semibold focus:outline-none border border-zinc-200/60"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                      Time Slot
+                    </label>
+                    <input
+                      type="text"
+                      value={editTimeSlot}
+                      onChange={(e) => setEditTimeSlot(e.target.value)}
+                      placeholder="e.g. 6:00 PM - 7:00 PM"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#f4f4f5] text-zinc-950 text-xs font-semibold focus:outline-none border border-zinc-200/60"
+                    />
+                  </div>
+                </div>
+
+                {/* Piping Message */}
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                    Text on Cake (Piped)
+                  </label>
+                  <input
+                    type="text"
+                    value={editCakeMessage}
+                    onChange={(e) => setEditCakeMessage(e.target.value)}
+                    placeholder="e.g. Happy Birthday Aarav!"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#f4f4f5] text-zinc-950 text-xs font-semibold focus:outline-none border border-zinc-200/60"
+                  />
+                </div>
+
+                {/* Customer Details */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                      Customer Name
+                    </label>
+                    <input
+                      type="text"
+                      value={editCustomerName}
+                      onChange={(e) => setEditCustomerName(e.target.value)}
+                      placeholder="Customer Name"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#f4f4f5] text-zinc-950 text-xs font-semibold focus:outline-none border border-zinc-200/60"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                      Customer Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={editCustomerPhone}
+                      onChange={(e) => setEditCustomerPhone(e.target.value)}
+                      placeholder="Phone"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#f4f4f5] text-zinc-950 text-xs font-semibold focus:outline-none border border-zinc-200/60"
+                    />
+                  </div>
+                </div>
+
+                {/* Fulfilment & Delivery Address */}
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2 p-1 bg-[#f4f4f5] rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setEditFulfilmentType("pickup")}
+                      className={`py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+                        editFulfilmentType === "pickup"
+                          ? "bg-white text-zinc-950 shadow-xs"
+                          : "text-zinc-500"
+                      }`}
+                    >
+                      Store Pickup
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditFulfilmentType("delivery")}
+                      className={`py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+                        editFulfilmentType === "delivery"
+                          ? "bg-white text-zinc-950 shadow-xs"
+                          : "text-zinc-500"
+                      }`}
+                    >
+                      Home Delivery
+                    </button>
+                  </div>
+                  {editFulfilmentType === "delivery" && (
+                    <input
+                      type="text"
+                      value={editDeliveryAddress}
+                      onChange={(e) => setEditDeliveryAddress(e.target.value)}
+                      placeholder="Delivery address..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#f4f4f5] text-zinc-950 text-xs font-semibold focus:outline-none border border-zinc-200/60"
+                    />
+                  )}
+                </div>
+
+                {/* Special Notes */}
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                    Special Kitchen Notes
+                  </label>
+                  <input
+                    type="text"
+                    value={editSpecialNotes}
+                    onChange={(e) => setEditSpecialNotes(e.target.value)}
+                    placeholder="e.g. Less sweetness, gold leaf border"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#f4f4f5] text-zinc-950 text-xs font-semibold focus:outline-none border border-zinc-200/60"
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="p-4 border-t border-zinc-100 bg-white space-y-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleSaveEditedOrder}
+                  className="w-full py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs transition-all active:scale-98 shadow-xs cursor-pointer"
+                >
+                  Save Changes ✓
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingOrder(null)}
+                  className="w-full py-2 text-xs font-semibold text-zinc-400 hover:text-zinc-700 cursor-pointer"
+                >
+                  Cancel
                 </button>
               </div>
             </motion.div>

@@ -80,47 +80,7 @@ export const SEED_BAKERS: Baker[] = [
   },
 ];
 
-export const SEED_ORDERS: Order[] = [
-  {
-    id: "order-1",
-    order_number: "CK-892",
-    baker_id: "baker-1",
-    flavour: "Chocolate Truffle",
-    weight: "1 Kg",
-    is_eggless: true,
-    total_price: 750,
-    token_amount: 100,
-    balance_amount: 650,
-    delivery_date: new Date().toISOString().split("T")[0],
-    time_slot: "6:30 PM - 7:30 PM",
-    fulfilment_type: "pickup",
-    cake_message: "Happy Birthday Aarav!",
-    customer_name: "Rohan Sharma",
-    customer_phone: "919988776655",
-    status: "confirmed",
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: "order-2",
-    order_number: "CK-893",
-    baker_id: "baker-1",
-    flavour: "Red Velvet Cream Cheese",
-    weight: "0.5 Kg",
-    is_eggless: true,
-    total_price: 550,
-    token_amount: 100,
-    balance_amount: 450,
-    delivery_date: new Date().toISOString().split("T")[0],
-    time_slot: "8:00 PM - 9:00 PM",
-    fulfilment_type: "delivery",
-    delivery_address: "Flat 402, Pine Towers, Indiranagar",
-    cake_message: "Happy Anniversary Mom & Dad",
-    customer_name: "Priya Menon",
-    customer_phone: "919877665544",
-    status: "pending_token",
-    created_at: new Date().toISOString(),
-  },
-];
+export const SEED_ORDERS: Order[] = [];
 
 export const STORAGE_KEYS = {
   BAKERS: "cakeflow_bakers_v1",
@@ -224,16 +184,27 @@ export function deleteLocalBaker(bakerId: string): void {
 }
 
 export function getLocalOrders(): Order[] {
-  if (typeof window === "undefined") return SEED_ORDERS;
+  if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.ORDERS);
     if (!raw) {
-      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(SEED_ORDERS));
-      return SEED_ORDERS;
+      return [];
     }
-    return JSON.parse(raw);
+    const parsed: Order[] = JSON.parse(raw);
+    // Sanitize any previous demo/bluff seed orders
+    const cleaned = parsed.filter(
+      (o) =>
+        o.id !== "order-1" &&
+        o.id !== "order-2" &&
+        o.order_number !== "CK-892" &&
+        o.order_number !== "CK-893"
+    );
+    if (cleaned.length !== parsed.length) {
+      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(cleaned));
+    }
+    return cleaned;
   } catch {
-    return SEED_ORDERS;
+    return [];
   }
 }
 
@@ -420,7 +391,15 @@ export async function fetchRemoteOrdersByBaker(bakerId: string): Promise<Order[]
 
     if (error || !data) return [];
 
-    const orders: Order[] = data.map((d) => ({
+    const orders: Order[] = data
+      .filter(
+        (d) =>
+          d.id !== "order-1" &&
+          d.id !== "order-2" &&
+          d.order_number !== "CK-892" &&
+          d.order_number !== "CK-893"
+      )
+      .map((d) => ({
       id: d.id,
       order_number: d.order_number,
       baker_id: d.baker_id,

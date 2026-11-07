@@ -253,6 +253,9 @@ export default function CustomerCheckoutPage() {
         if (!b && found.baker_id) {
           b = (await fetchRemoteBaker(found.baker_id)) || undefined;
         }
+        if (!b && found.baker) {
+          b = found.baker;
+        }
         if (b) setBaker(b);
       }
       setIsLoading(false);
