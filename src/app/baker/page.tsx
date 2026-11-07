@@ -871,25 +871,6 @@ function BakerPOSContent() {
           </div>
         </header>
 
-        {/* Verification Alert Banner for Claimed Payments */}
-        {paymentClaimsCount > 0 && (
-          <div
-            onClick={() => {
-              playTapSound();
-              setStatusFilter("waiting");
-            }}
-            className="px-4 py-2 bg-amber-50 border-b border-amber-200/80 flex items-center justify-between cursor-pointer active:bg-amber-100 transition-colors"
-          >
-            <div className="flex items-center gap-2 text-xs font-semibold text-amber-950">
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-              <span>
-                {paymentClaimsCount} Customer Payment{paymentClaimsCount > 1 ? "s" : ""} to Verify (Check Bank SMS)
-              </span>
-            </div>
-            <span className="text-[11px] font-bold text-amber-800 underline">Verify Now →</span>
-          </div>
-        )}
-
         {/* 3-Segment Switcher with Sliding Motion Pill */}
         <div className="px-4 py-2 bg-white">
           <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-zinc-100 text-xs font-semibold relative">
@@ -920,11 +901,14 @@ function BakerPOSContent() {
                       transition={{ type: "spring", stiffness: 450, damping: 35 }}
                     />
                   )}
-                  <span>{tab.label}</span>
+                  <span className="flex items-center gap-1">
+                    <span>{tab.label}</span>
+                    {hasAlert && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />}
+                  </span>
                   <span
                     className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold transition-colors ${
                       hasAlert
-                        ? "bg-amber-300 text-amber-950 animate-pulse font-extrabold"
+                        ? "bg-amber-200 text-amber-950 font-extrabold"
                         : isActive
                         ? "bg-zinc-950 text-white"
                         : "bg-zinc-200 text-zinc-600"
@@ -1033,70 +1017,71 @@ function BakerPOSContent() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                        className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-300 shadow-xs space-y-2.5"
+                        className="p-3.5 rounded-2xl bg-[#f4f4f5] border border-amber-200/80 shadow-xs space-y-3"
                       >
-                        {/* Top Line: Alert & Order # */}
-                        <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-amber-200/80">
-                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-950">
-                            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                            <span>Customer Claimed Payment • ₹{ord.token_amount}</span>
-                          </span>
-                          <span className="text-[10px] font-bold text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded-full font-mono">
-                            #{ord.order_number}
-                          </span>
-                        </div>
-
-                        {/* Order & Customer Info */}
-                        <div className="space-y-1 text-xs">
-                          <div className="font-bold text-zinc-950 text-sm leading-snug">
-                            {ord.weight} {ord.flavour}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-1.5 text-zinc-600">
-                            <span>{getFriendlyDateHeader(ord.delivery_date)}</span>
-                            <span>•</span>
-                            <span>{ord.time_slot}</span>
-                            <span>•</span>
-                            <span className="font-bold text-zinc-950">₹{ord.total_price} Total</span>
-                          </div>
-                          {(ord.customer_name || ord.customer_phone) && (
-                            <div className="pt-1 text-zinc-800 font-medium">
-                              Customer: <span className="font-bold text-zinc-950">{ord.customer_name || "Guest"}</span>
-                              {ord.customer_phone && ` (${ord.customer_phone})`}
+                        {/* Top Line: Cake Specs & Claim Badge */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-bold text-zinc-950 leading-snug">
+                              <span className="font-mono text-zinc-500 font-semibold text-xs mr-1.5">#{ord.order_number}</span>
+                              <span>{ord.weight} {ord.flavour}</span>
                             </div>
-                          )}
-                          <div className="text-[11px] text-amber-900 bg-amber-100/70 px-2.5 py-1 rounded-xl">
-                            👉 Please match <strong>₹{ord.token_amount}</strong> credit in your GPay / PhonePe SMS before accepting.
+                            <div className="flex flex-wrap items-center gap-1.5 text-xs text-zinc-500 mt-0.5">
+                              <span>{getFriendlyDateHeader(ord.delivery_date)}</span>
+                              <span>•</span>
+                              <span>{ord.time_slot}</span>
+                              <span>•</span>
+                              <span className="font-bold text-zinc-950">₹{ord.total_price}</span>
+                            </div>
+                          </div>
+
+                          <div className="shrink-0 pt-0.5">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200/60">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                              ₹{ord.token_amount} Claimed
+                            </span>
                           </div>
                         </div>
 
-                        {/* Baker 1-Tap Verification Action */}
-                        <div className="flex items-center gap-2 pt-1">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              playSuccessSound();
-                              updateOrderStatus(ord.id, "confirmed");
-                              showToast("Payment Verified! Moved to Kitchen ✓", "success");
-                            }}
-                            className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-98 cursor-pointer"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                            <span>Accept Payment & Bake ✓</span>
-                          </button>
+                        {/* Customer & Microcopy Verification Action */}
+                        <div className="pt-2 border-t border-zinc-200/60 flex items-center justify-between gap-2 text-xs">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-zinc-950 truncate text-[11px]">
+                              {ord.customer_name || "Customer"} {ord.customer_phone ? `(${ord.customer_phone})` : ""}
+                            </div>
+                            <div className="text-[10px] text-zinc-500">
+                              Match ₹{ord.token_amount} in Bank SMS
+                            </div>
+                          </div>
 
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              playTapSound();
-                              updateOrderStatus(ord.id, "pending_token");
-                              showToast("Reverted: Payment not received", "info");
-                            }}
-                            className="py-2.5 px-3 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-semibold text-xs border border-zinc-200/80 active:scale-98 cursor-pointer"
-                          >
-                            <span>Not Received</span>
-                          </button>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                playTapSound();
+                                updateOrderStatus(ord.id, "pending_token");
+                                showToast("Marked as Not Received", "info");
+                              }}
+                              className="h-8 px-2.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-600 text-xs font-semibold border border-zinc-200/80 active:scale-95 transition-all cursor-pointer"
+                            >
+                              Not Received
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                playSuccessSound();
+                                updateOrderStatus(ord.id, "confirmed");
+                                showToast("Payment Verified! Moved to Kitchen ✓", "success");
+                              }}
+                              className="h-8 px-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-xs flex items-center gap-1 active:scale-95 transition-all shadow-xs cursor-pointer"
+                            >
+                              <Check className="w-3 h-3 text-zinc-300" />
+                              <span>Accept & Bake</span>
+                            </button>
+                          </div>
                         </div>
                       </motion.div>
                     );
