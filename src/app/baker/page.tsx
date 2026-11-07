@@ -806,14 +806,12 @@ function BakerPOSContent() {
       <div className="shrink-0 bg-white border-b border-zinc-100 z-20 w-full max-w-xl mx-auto">
         {/* App Bar */}
         <header className="px-4 py-2.5 flex items-center justify-between border-b border-zinc-100/60">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-sm font-bold tracking-tight text-zinc-950 flex items-center gap-1.5 truncate max-w-[150px] sm:max-w-[200px]">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-              <span className="truncate">{baker?.name || "CakeFlow"}</span>
-            </span>
-            <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full font-mono shrink-0">
-              ₹{todayEarned.toLocaleString("en-IN")}
-            </span>
+          <div className="flex items-center shrink-0">
+            <img
+              src="/icon.svg"
+              alt="CakeFlow"
+              className="w-8 h-8 rounded-xl border border-zinc-200/80 shadow-2xs object-contain"
+            />
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
@@ -1112,10 +1110,11 @@ function BakerPOSContent() {
                     {/* Top Line: Cake & Status */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <div className="text-base font-bold text-zinc-950 truncate">
-                          #{ord.order_number} • {ord.weight} {ord.flavour}
+                        <div className="text-base font-bold text-zinc-950 leading-snug">
+                          <span className="font-mono text-zinc-500 font-semibold text-xs mr-1.5">#{ord.order_number}</span>
+                          <span>{ord.weight} {ord.flavour}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs text-zinc-500 mt-0.5">
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-zinc-500 mt-1">
                           <span className="font-semibold text-zinc-800">
                             {ord.is_eggless ? "100% Eggless" : "With Egg"}
                           </span>
@@ -1126,29 +1125,7 @@ function BakerPOSContent() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenEditOrder(ord);
-                          }}
-                          className="w-7 h-7 rounded-lg bg-white hover:bg-zinc-200 text-zinc-600 flex items-center justify-center transition-colors border border-zinc-200/60"
-                          title="Edit order specs"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteOrder(ord);
-                          }}
-                          className="w-7 h-7 rounded-lg bg-white hover:bg-red-50 text-red-500 flex items-center justify-center transition-colors border border-zinc-200/60"
-                          title="Cancel / Delete order"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                      <div className="shrink-0 pt-0.5">
                         <span
                           className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
                             ord.status === "confirmed"
