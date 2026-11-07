@@ -480,7 +480,11 @@ export async function fetchRemoteOrdersByBaker(bakerId: string): Promise<Order[]
         }
       });
 
-      const mergedList = Array.from(localMap.values());
+      const mergedList = Array.from(localMap.values()).sort(
+        (a, b) =>
+          new Date(b.created_at || 0).getTime() -
+          new Date(a.created_at || 0).getTime()
+      );
       if (hasNewChanges) {
         localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(mergedList));
         notifyOrdersUpdated(mergedList);

@@ -611,10 +611,34 @@ export default function BakerPOSPage() {
 
   if (!baker) return null;
 
-  // Filter calculations
-  const kitchenOrders = orders.filter((o) => o.status === "confirmed" || o.status === "baked");
-  const waitingOrders = orders.filter((o) => o.status === "pending_token");
-  const deliveredOrders = orders.filter((o) => o.status === "completed");
+  // Filter calculations (Always Newest First for Waiting & Completed)
+  const kitchenOrders = orders
+    .filter((o) => o.status === "confirmed" || o.status === "baked")
+    .sort((a, b) => {
+      if (a.delivery_date !== b.delivery_date) {
+        return a.delivery_date.localeCompare(b.delivery_date);
+      }
+      return (
+        new Date(b.created_at || 0).getTime() -
+        new Date(a.created_at || 0).getTime()
+      );
+    });
+
+  const waitingOrders = orders
+    .filter((o) => o.status === "pending_token")
+    .sort(
+      (a, b) =>
+        new Date(b.created_at || 0).getTime() -
+        new Date(a.created_at || 0).getTime()
+    );
+
+  const deliveredOrders = orders
+    .filter((o) => o.status === "completed")
+    .sort(
+      (a, b) =>
+        new Date(b.created_at || 0).getTime() -
+        new Date(a.created_at || 0).getTime()
+    );
 
   const displayedOrders =
     statusFilter === "kitchen"
