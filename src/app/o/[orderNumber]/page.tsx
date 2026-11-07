@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { Order, Baker } from "@/lib/types";
 import {
@@ -35,29 +35,63 @@ export default function CustomerCheckoutPage() {
   const params = useParams();
   const orderNumber = (params?.orderNumber as string) || "";
 
-  const [order, setOrder] = useState<Order | null>(null);
-  const [baker, setBaker] = useState<Baker | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Synchronous Cache Initialization (Zero Skeleton Flash!)
+  const initialOrder = useMemo(() => {
+    if (typeof window === "undefined" || !orderNumber) return null;
+    return getOrderByNumber(orderNumber) || null;
+  }, [orderNumber]);
+
+  const initialBaker = useMemo(() => {
+    if (typeof window === "undefined" || !initialOrder) return null;
+    const bakers = getLocalBakers();
+    return bakers.find((b) => b.id === initialOrder.baker_id) || null;
+  }, [initialOrder]);
+
+  const [order, setOrder] = useState<Order | null>(initialOrder);
+  const [baker, setBaker] = useState<Baker | null>(initialBaker);
+  const [isLoading, setIsLoading] = useState(!initialOrder);
 
   const availableAddons =
     baker?.addon_items && baker.addon_items.length > 0
       ? baker.addon_items
       : DEFAULT_ADDONS;
 
-  // Essential Form Fields
-  const [cakeMessage, setCakeMessage] = useState("");
-  const [referenceImages, setReferenceImages] = useState<string[]>([]);
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [fulfilmentType, setFulfilmentType] = useState<"pickup" | "delivery">("pickup");
-  const [deliveryAddress, setDeliveryAddress] = useState("");
+  // Essential Form Fields (Pre-populated from cache if present)
+  const [cakeMessage, setCakeMessage] = useState(initialOrder?.cake_message || "");
+  const [referenceImages, setReferenceImages] = useState<string[]>(() => {
+    if (!initialOrder) return [];
+    if (initialOrder.reference_images && initialOrder.reference_images.length > 0) {
+      return initialOrder.reference_images;
+    }
+    if (initialOrder.reference_image) {
+      return [initialOrder.reference_image];
+    }
+    return [];
+  });
+  const [customerName, setCustomerName] = useState(initialOrder?.customer_name || "");
+  const [customerPhone, setCustomerPhone] = useState(initialOrder?.customer_phone || "");
+  const [fulfilmentType, setFulfilmentType] = useState<"pickup" | "delivery">(
+    initialOrder?.fulfilment_type || "pickup"
+  );
+  const [deliveryAddress, setDeliveryAddress] = useState(
+    initialOrder?.delivery_address || ""
+  );
   const [selectedAddons, setSelectedAddons] = useState<
     Array<{ id: string; name: string; price: number }>
-  >([]);
-  const [showAddonsSection, setShowAddonsSection] = useState(false);
+  >(initialOrder?.addons || []);
+  const [showAddonsSection, setShowAddonsSection] = useState(
+    Boolean(initialOrder?.addons && initialOrder.addons.length > 0)
+  );
 
   // Payment & Modal States
-  const [isPaid, setIsPaid] = useState(false);
+  const [isPaid, setIsPaid] = useState(() => {
+    if (!initialOrder) return false;
+    return (
+      initialOrder.status === "confirmed" ||
+      initialOrder.status === "baked" ||
+      initialOrder.status === "completed"
+    );
+  });
   const [isPaying, setIsPaying] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [copiedUpi, setCopiedUpi] = useState(false);

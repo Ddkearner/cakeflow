@@ -72,9 +72,28 @@ const isValidCakeMessage = (msg?: string) => {
 
 export default function BakerPOSPage() {
   const { showToast } = useToast();
-  const [baker, setBaker] = useState<Baker | null>(null);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Synchronous Cache Initialization (Zero Skeleton Flash!)
+  const [baker, setBaker] = useState<Baker | null>(() => {
+    if (typeof window === "undefined") return null;
+    const all = getLocalBakers();
+    const token = localStorage.getItem("cakeflow_active_token");
+    if (token) {
+      const found = getBakerByToken(token);
+      if (found) return found;
+    }
+    return all.length > 0 ? all[0] : null;
+  });
+
+  const [orders, setOrders] = useState<Order[]>(() => {
+    if (typeof window === "undefined") return [];
+    const all = getLocalOrders();
+    const allBakers = getLocalBakers();
+    const current = allBakers[0];
+    return current ? all.filter((o) => o.baker_id === current.id) : all;
+  });
+
+  const [isLoading, setIsLoading] = useState(false);
   
   // Clean 3-Mode Filter: "kitchen" (Active to-bake & ready) vs "waiting" vs "delivered"
   const [statusFilter, setStatusFilter] = useState<"kitchen" | "waiting" | "delivered">("kitchen");
@@ -180,13 +199,13 @@ export default function BakerPOSPage() {
       setBaker(currentBaker);
       const all = getLocalOrders();
       setOrders(all.filter((o) => o.baker_id === currentBaker.id));
+      setIsLoading(false);
       fetchRemoteOrdersByBaker(currentBaker.id).then((remote) => {
         if (remote && remote.length > 0) setOrders(remote);
       });
+    } else {
+      setIsLoading(false);
     }
-
-    const timer = setTimeout(() => setIsLoading(false), 200);
-    return () => clearTimeout(timer);
   }, []);
 
   const refreshOrders = async (bakerId: string) => {
@@ -550,12 +569,13 @@ export default function BakerPOSPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-zinc-950 selection:bg-zinc-200 relative overflow-x-hidden">
-      <div className="max-w-xl mx-auto min-h-screen flex flex-col relative">
-        {/* =======================================================================
-            COMPACT HIGH-UTILITY TOP APP BAR (SINGLE ROW - ZERO SCREEN WASTE)
-            ======================================================================= */}
-        <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-zinc-100 px-4 py-2.5 flex items-center justify-between">
+    <div className="h-[100dvh] bg-white text-zinc-950 selection:bg-zinc-200 flex flex-col overflow-hidden">
+      {/* =======================================================================
+          PINNED TOP BAR + SWITCHER (100% FIXED - ZERO SCROLL ON CHROME/SAFARI)
+          ======================================================================= */}
+      <div className="shrink-0 bg-white border-b border-zinc-100 z-20 w-full max-w-xl mx-auto">
+        {/* App Bar */}
+        <header className="px-4 py-2.5 flex items-center justify-between border-b border-zinc-100/60">
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold tracking-tight text-zinc-950 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -583,7 +603,7 @@ export default function BakerPOSPage() {
             <RainbowButton
               onClick={handleStartNewOrder}
               size="sm"
-              className="h-8 rounded-xl px-3 text-xs font-semibold"
+              className="h-8 rounded-xl px-3 text-xs font-semibold active:scale-95 transition-transform"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>New Order</span>
@@ -591,14 +611,12 @@ export default function BakerPOSPage() {
           </div>
         </header>
 
-        {/* =======================================================================
-            STREAMLINED 3-SEGMENT KITCHEN FILTER BAR (ZERO SCROLL, ZERO FATIGUE)
-            ======================================================================= */}
-        <div className="px-4 pt-2.5 pb-2 sticky top-[45px] z-10 bg-white border-b border-zinc-100/60">
+        {/* 3-Segment Switcher */}
+        <div className="px-4 py-2 bg-white">
           <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-zinc-100 text-xs font-semibold">
             <button
               onClick={() => setStatusFilter("kitchen")}
-              className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+              className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
                 statusFilter === "kitchen"
                   ? "bg-white text-zinc-950 shadow-xs"
                   : "text-zinc-500 hover:text-zinc-950"
@@ -616,7 +634,7 @@ export default function BakerPOSPage() {
 
             <button
               onClick={() => setStatusFilter("waiting")}
-              className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+              className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
                 statusFilter === "waiting"
                   ? "bg-white text-zinc-950 shadow-xs"
                   : "text-zinc-500 hover:text-zinc-950"
@@ -634,7 +652,7 @@ export default function BakerPOSPage() {
 
             <button
               onClick={() => setStatusFilter("delivered")}
-              className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+              className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
                 statusFilter === "delivered"
                   ? "bg-white text-zinc-950 shadow-xs"
                   : "text-zinc-500 hover:text-zinc-950"
@@ -651,11 +669,12 @@ export default function BakerPOSPage() {
             </button>
           </div>
         </div>
+      </div>
 
-        {/* =======================================================================
-            FLAT KITCHEN TICKETS LIST (ZERO NESTED BOXES)
-            ======================================================================= */}
-        <main className="flex-1 px-5 pt-3 pb-24 space-y-3">
+      {/* =======================================================================
+          SCROLLABLE KITCHEN CARDS LIST (ONLY CARDS SCROLL)
+          ======================================================================= */}
+      <main className="flex-1 overflow-y-auto overscroll-contain w-full max-w-xl mx-auto px-4 pt-3 pb-24 space-y-3">
           {isLoading ? (
             <div className="space-y-3 pt-2">
               {[1, 2, 3].map((n) => (
@@ -903,7 +922,8 @@ export default function BakerPOSPage() {
             ======================================================================= */}
         {isCreating && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-            <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-2xl relative overflow-hidden">
+            <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom duration-300 ease-out sm:slide-in-from-bottom-0 sm:zoom-in-95">
+              <div className="w-10 h-1 bg-zinc-200 rounded-full mx-auto mt-2.5 mb-0.5 sm:hidden shrink-0" />
               {/* Clean Modal Header */}
               <div className="px-5 py-4 border-b border-zinc-100 flex items-center justify-between bg-white shrink-0">
                 <div>
@@ -1157,7 +1177,8 @@ export default function BakerPOSPage() {
             ======================================================================= */}
         {proofOrder && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-            <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-2xl relative overflow-hidden">
+            <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom duration-300 ease-out sm:slide-in-from-bottom-0 sm:zoom-in-95">
+              <div className="w-10 h-1 bg-zinc-200 rounded-full mx-auto mt-2.5 mb-0.5 sm:hidden shrink-0" />
               {/* Header */}
               <div className="px-5 py-4 border-b border-zinc-100 flex items-center justify-between bg-white shrink-0">
                 <div>
@@ -1333,7 +1354,8 @@ export default function BakerPOSPage() {
             ======================================================================= */}
         {showSettingsModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-            <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-lg w-full max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-2xl relative overflow-hidden">
+            <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-lg w-full max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom duration-300 ease-out sm:slide-in-from-bottom-0 sm:zoom-in-95">
+              <div className="w-10 h-1 bg-zinc-200 rounded-full mx-auto mt-2.5 mb-0.5 sm:hidden shrink-0" />
               {/* Settings Header */}
               <div className="px-5 py-4 border-b border-zinc-100 flex items-center justify-between bg-white shrink-0">
                 <div>
@@ -1854,7 +1876,6 @@ export default function BakerPOSPage() {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 }
