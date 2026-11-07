@@ -884,6 +884,31 @@ export default function BakerPOSPage() {
                           </button>
                         </div>
 
+                        {/* Baker Manual Payment Confirmation Bypass */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            playSuccessSound();
+                            const updatedOrder: Order = {
+                              ...ord,
+                              status: "confirmed",
+                              paid_at: new Date().toISOString(),
+                              payment_method: "cash_offline",
+                              utr: `CASH-${Date.now().toString().slice(-6)}`,
+                            };
+                            saveLocalOrder(updatedOrder);
+                            setOrders((prev) =>
+                              prev.map((o) => (o.id === ord.id ? updatedOrder : o))
+                            );
+                            showToast("Order Confirmed! Moved to Kitchen ✓", "success");
+                          }}
+                          className="w-full py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-98 border border-emerald-200/60"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Mark Token Received (Cash / Offline)</span>
+                        </button>
+
                         {/* Delete Unpaid Order Action Button */}
                         <button
                           type="button"
@@ -1030,9 +1055,37 @@ export default function BakerPOSPage() {
 
                     {/* Financial Ledger & 1 Clear Action Button */}
                     <div className="pt-2 border-t border-zinc-200/60 flex items-center justify-between gap-3">
-                      <div className="text-xs">
-                        <div className="text-zinc-400 text-[10px]">Handover Balance</div>
-                        <div className="font-bold text-zinc-950 text-base">₹{ord.balance_amount}</div>
+                      <div className="text-xs space-y-1">
+                        <div>
+                          <div className="text-zinc-400 text-[10px]">Handover Balance</div>
+                          <div className="font-bold text-zinc-950 text-base">₹{ord.balance_amount}</div>
+                        </div>
+
+                        {/* Direct Token Payment & Verified UTR proof */}
+                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 text-[10px] font-bold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                            ₹{ord.token_amount} Token Paid
+                          </span>
+
+                          {(ord.utr || ord.transaction_id) && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const refToCopy = ord.utr || ord.transaction_id || "";
+                                navigator.clipboard.writeText(refToCopy);
+                                playSuccessSound();
+                                showToast(`Copied UTR: ${refToCopy}`, "success");
+                              }}
+                              title="Click to copy 12-digit UTR"
+                              className="font-mono text-[10px] text-zinc-700 bg-white hover:bg-zinc-100 px-2 py-0.5 rounded-md border border-zinc-200 font-semibold inline-flex items-center gap-1 active:scale-95 transition-transform"
+                            >
+                              <span>UTR: {ord.utr || ord.transaction_id}</span>
+                              <Copy className="w-2.5 h-2.5 text-zinc-400" />
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex-1 max-w-[200px] flex justify-end">

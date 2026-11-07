@@ -295,6 +295,10 @@ export async function syncOrderToCloud(order: Order): Promise<boolean> {
       status: order.status || "pending_token",
       customer_name: order.customer_name || null,
       customer_phone: order.customer_phone || null,
+      transaction_id: order.transaction_id || null,
+      utr: order.utr || null,
+      paid_at: order.paid_at || null,
+      payment_method: order.payment_method || null,
     };
 
     const { error } = await supabase.from("orders").upsert(payload, {

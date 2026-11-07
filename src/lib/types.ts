@@ -52,6 +52,10 @@ export interface Order {
   special_notes?: string;
   customer_name?: string;
   customer_phone?: string;
+  transaction_id?: string;
+  utr?: string;
+  paid_at?: string;
+  payment_method?: string;
   status: 'pending_token' | 'confirmed' | 'baked' | 'completed' | 'cancelled';
   created_at: string;
 }

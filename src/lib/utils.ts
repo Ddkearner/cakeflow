@@ -37,14 +37,17 @@ export function buildUpiIntentLink({
   name,
   amount,
   orderNumber,
+  txnRef,
 }: {
   upiId: string;
   name: string;
   amount: number;
   orderNumber: string;
+  txnRef?: string;
 }): string {
   const cleanName = encodeURIComponent(name);
-  const note = encodeURIComponent(`Advance Token for Order ${orderNumber}`);
-  return `upi://pay?pa=${upiId}&pn=${cleanName}&am=${amount}&cu=INR&tn=${note}`;
+  const ref = txnRef || `CF${orderNumber.replace(/[^A-Za-z0-9]/g, "")}`;
+  const note = encodeURIComponent(`Token for ${orderNumber} Ref:${ref}`);
+  return `upi://pay?pa=${upiId}&pn=${cleanName}&am=${amount}&cu=INR&tn=${note}&tr=${encodeURIComponent(ref)}`;
 }
 
