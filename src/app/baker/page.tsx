@@ -40,8 +40,6 @@ import {
   Trash2,
   AlertCircle,
 } from "lucide-react";
-import { RainbowButton } from "@/components/ui/rainbow-button";
-import { MovingBorderButton } from "@/components/ui/moving-border";
 import { KitchenCardSkeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -821,17 +819,17 @@ export default function BakerPOSPage() {
               <Settings className="w-4 h-4" />
             </button>
 
-            <RainbowButton
+            <button
+              type="button"
               onClick={() => {
                 playTapSound();
                 handleStartNewOrder();
               }}
-              size="sm"
-              className="h-8 rounded-xl px-3 text-xs font-semibold active:scale-95 transition-transform"
+              className="h-8 rounded-xl px-3 bg-zinc-950 hover:bg-zinc-800 text-white text-xs font-semibold active:scale-95 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>New Order</span>
-            </RainbowButton>
+            </button>
           </div>
         </header>
 
@@ -1264,68 +1262,41 @@ export default function BakerPOSPage() {
                     )}
 
                     {/* Financial Ledger & 1 Clear Action Button */}
-                    <div className="pt-2 border-t border-zinc-200/60 flex items-center justify-between gap-3">
-                      <div className="text-xs space-y-1">
-                        <div>
-                          <div className="text-zinc-400 text-[10px]">Handover Balance</div>
-                          <div className="font-bold text-zinc-950 text-base">₹{ord.balance_amount}</div>
-                        </div>
-
-                        {/* Direct Token Payment & Verified UTR proof */}
-                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 text-[10px] font-bold">
+                    <div className="pt-2.5 border-t border-zinc-200/70 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-[11px] text-zinc-500 font-medium">Handover Balance</div>
+                        <div className="text-base font-bold text-zinc-950 font-mono tracking-tight">₹{ord.balance_amount}</div>
+                        <div className="flex items-center gap-1.5 pt-0.5">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                            ₹{ord.token_amount} Token Paid
+                            ₹{ord.token_amount} Token Paid (UPI)
                           </span>
-
-                          {(ord.utr || ord.transaction_id) && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const refToCopy = ord.utr || ord.transaction_id || "";
-                                navigator.clipboard.writeText(refToCopy);
-                                playSuccessSound();
-                                showToast(`Copied UTR: ${refToCopy}`, "success");
-                              }}
-                              title="Click to copy 12-digit UTR"
-                              className="font-mono text-[10px] text-zinc-700 bg-white hover:bg-zinc-100 px-2 py-0.5 rounded-md border border-zinc-200 font-semibold inline-flex items-center gap-1 active:scale-95 transition-transform"
-                            >
-                              <span>UTR: {ord.utr || ord.transaction_id}</span>
-                              <Copy className="w-2.5 h-2.5 text-zinc-400" />
-                            </button>
-                          )}
                         </div>
-
-                        {/* Baker Safety Notice: Match UTR with SMS before baking */}
-                        {ord.utr && (
-                          <div className="text-[10px] text-amber-900 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 flex items-center gap-1 font-medium mt-0.5">
-                            <AlertCircle className="w-2.5 h-2.5 text-amber-600 shrink-0" />
-                            <span>Match UTR in Bank SMS before baking sponge</span>
-                          </div>
-                        )}
                       </div>
 
-                      <div className="flex-1 max-w-[200px] flex justify-end">
+                      <div className="shrink-0">
                         {ord.status === "confirmed" && (
-                          <MovingBorderButton
+                          <button
+                            type="button"
                             onClick={() => handleMarkAsBaked(ord.id)}
-                            containerClassName="w-full h-10"
-                            className="bg-white text-zinc-950 font-bold text-xs hover:bg-zinc-50 border border-zinc-200/80 shadow-2xs transition-transform active:scale-95"
+                            className="h-9 px-4 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-xs transition-colors active:scale-98 shadow-xs cursor-pointer flex items-center gap-1.5"
                           >
-                            <span>{bakingOrderId === ord.id ? "🎉 Baked & Ready!" : "Mark as Baked ✓"}</span>
-                          </MovingBorderButton>
+                            <span>{bakingOrderId === ord.id ? "Marked Ready ✓" : "Mark as Baked"}</span>
+                            <Check className="w-3.5 h-3.5 text-zinc-400" />
+                          </button>
                         )}
 
                         {ord.status === "baked" && (
                           <button
+                            type="button"
                             onClick={() => {
                               playSuccessSound();
                               updateOrderStatus(ord.id, "completed");
                             }}
-                            className="w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all active:scale-95 shadow-xs"
+                            className="h-9 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-semibold text-xs transition-colors active:scale-98 shadow-xs cursor-pointer flex items-center gap-1.5"
                           >
-                            Collected & Paid ✓
+                            <span>Collected & Paid</span>
+                            <Check className="w-3.5 h-3.5" />
                           </button>
                         )}
                       </div>

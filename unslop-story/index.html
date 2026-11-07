@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CakeFlow — Unslopping Story</title>
+  <meta name="unslop-steps" content="Original Slop, Spacing & Layout, Color & Surfaces, Kill UTR & Add Official Logos, Quiet Craft">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: #0c0d0e;
+      color: #f4f4f5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      overflow-x: hidden;
+    }
+
+    /* Container & Phone Frame */
+    .viewport {
+      width: 100%;
+      max-width: 440px;
+      background: #ffffff;
+      color: #09090b;
+      border-radius: 40px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      position: relative;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Controls Bar */
+    .controls {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .badge-unslop {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: #18181b;
+      color: #a1a1aa;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+
+    .btn-play {
+      background: #ffffff;
+      color: #09090b;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.15s, background 0.15s;
+    }
+
+    .btn-play:active {
+      transform: scale(0.96);
+    }
+
+    .btn-record {
+      background: #ef4444;
+      color: #ffffff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.15s;
+    }
+
+    .timeline {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+
+    .timeline-step {
+      flex: 1;
+      height: 4px;
+      background: #27272a;
+      border-radius: 9999px;
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .timeline-fill {
+      width: 0%;
+      height: 100%;
+      background: #10b981;
+      transition: width 0.3s ease;
+    }
+
+    .timeline-step.active .timeline-fill {
+      width: 100%;
+    }
+
+    /* Redline Annotations Overlay */
+    .redline {
+      position: absolute;
+      border: 2px dashed #ef4444;
+      border-radius: 8px;
+      background: rgba(239, 68, 68, 0.08);
+      pointer-events: none;
+      z-index: 50;
+      opacity: 0;
+      transform: scale(0.98);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .redline-tag {
+      position: absolute;
+      top: -12px;
+      right: 8px;
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .redline.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* =========================================================================
+       APP SCREEN STYLES (MORPHABLE FROM SLOP TO CRAFT)
+       ========================================================================= */
+    .app-screen {
+      padding: 20px 16px;
+      position: relative;
+    }
+
+    /* Top Bar */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #f4f4f5;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Slop 1: Rainbow Button */
+    .new-btn {
+      padding: 6px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.4s ease;
+      border: none;
+    }
+
+    .slop-rainbow {
+      background: linear-gradient(135deg, #ff007a, #7928ca, #0070f3, #00dfd8);
+      background-size: 300% 300%;
+      color: #ffffff;
+      animation: rainbow 3s ease infinite;
+      box-shadow: 0 4px 15px rgba(121, 40, 202, 0.4);
+    }
+
+    @keyframes rainbow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .craft-btn {
+      background: #09090b !important;
+      color: #ffffff !important;
+      box-shadow: none !important;
+      animation: none !important;
+    }
+
+    /* Card Component */
+    .card {
+      margin-top: 14px;
+      padding: 18px 16px;
+      border-radius: 24px;
+      background: #f4f4f5;
+      position: relative;
+      transition: all 0.4s ease;
+    }
+
+    .cake-name {
+      font-size: 17px;
+      font-weight: 800;
+      color: #09090b;
+      transition: font-size 0.3s;
+    }
+
+    .meta-line {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #71717a;
+      margin-top: 4px;
+      transition: all 0.3s;
+    }
+
+    /* Slop 2: The Neon Green UTR Box */
+    .utr-box {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      transition: all 0.4s ease;
+    }
+
+    .utr-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 800;
+      color: #065f46;
+    }
+
+    .badge-slop {
+      background: #059669;
+      color: #ffffff;
+      font-size: 9px;
+      font-weight: 900;
+      padding: 2px 6px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .utr-ref-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      margin-top: 8px;
+      padding-top: 6px;
+      border-top: 1px solid #d1fae5;
+    }
+
+    /* Financial Row */
+    .finance-row {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid #e4e4e7;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Slop 3: Moving Border Button on Kitchen Card */
+    .baked-btn {
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.4s ease;
+    }
+
+    .slop-moving-border {
+      background: #ffffff;
+      color: #09090b;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+      position: relative;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.4), inset 0 0 8px rgba(16, 185, 129, 0.2);
+      animation: pulse-glow 2s infinite;
+    }
+
+    @keyframes pulse-glow {
+      0% { box-shadow: 0 0 8px rgba(16, 185, 129, 0.3); }
+      50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.7); }
+      100% { box-shadow: 0 0 8px rgba(16, 185, 129, 0.3); }
+    }
+
+    .craft-action-btn {
+      background: #09090b !important;
+      color: #ffffff !important;
+      border: none !important;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06) !important;
+      animation: none !important;
+    }
+
+    /* Step Banner Description */
+    .step-banner {
+      margin-top: 18px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: #18181b;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px;
+      line-height: 1.5;
+      color: #d4d4d8;
+      max-width: 440px;
+      width: 100%;
+    }
+
+    .step-banner strong {
+      color: #ffffff;
+      display: block;
+      margin-bottom: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Controller Bar -->
+  <div class="controls">
+    <div class="badge-unslop">
+      <span class="badge-dot"></span>
+      <span id="step-label">Step 0: Original Slop</span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn-play" id="btn-play">▶ Play Story</button>
+      <button class="btn-record" id="btn-record">● Record Video</button>
+    </div>
+  </div>
+
+  <!-- Timeline Bar -->
+  <div class="timeline" id="timeline">
+    <div class="timeline-step active" onclick="goToStep(0)"><div class="timeline-fill" style="width:100%"></div></div>
+    <div class="timeline-step" onclick="goToStep(1)"><div class="timeline-fill"></div></div>
+    <div class="timeline-step" onclick="goToStep(2)"><div class="timeline-fill"></div></div>
+    <div class="timeline-step" onclick="goToStep(3)"><div class="timeline-fill"></div></div>
+    <div class="timeline-step" onclick="goToStep(4)"><div class="timeline-fill"></div></div>
+  </div>
+
+  <!-- Morphing Screen Viewport -->
+  <div class="viewport" id="viewport">
+    <!-- Redline Annotations -->
+    <div class="redline" id="redline-rainbow" style="top: 14px; right: 12px; width: 110px; height: 38px;">
+      <span class="redline-tag">Rainbow Slop</span>
+    </div>
+
+    <div class="redline" id="redline-utr" style="top: 160px; left: 16px; width: 376px; height: 78px;">
+      <span class="redline-tag">Crypto UTR Slop</span>
+    </div>
+
+    <div class="redline" id="redline-moving" style="bottom: 24px; right: 14px; width: 140px; height: 42px;">
+      <span class="redline-tag">Glow Border</span>
+    </div>
+
+    <!-- The Screen Content -->
+    <div class="app-screen">
+      <!-- App Header -->
+      <div class="app-header">
+        <div class="brand-title">
+          <span style="width:8px; height:8px; border-radius:50%; background:#10b981;"></span>
+          <span id="title-text">SugarBloom Studio</span>
+        </div>
+        <button class="new-btn slop-rainbow" id="btn-new">
+          <span>+ New Order</span>
+        </button>
+      </div>
+
+      <!-- Chef Ticket Card -->
+      <div class="card" id="main-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <div class="cake-name">1 Kg Chocolate Truffle</div>
+            <div class="meta-line">
+              <span>100% Eggless</span> • <span>Today</span> • <span>6:00 PM - 7:00 PM</span>
+            </div>
+          </div>
+          <span style="font-size: 10px; font-weight: 700; background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 9999px;">
+            In Oven
+          </span>
+        </div>
+
+        <!-- The Slop Box that will morph / disappear -->
+        <div class="utr-box" id="utr-box">
+          <div class="utr-title">
+            <span id="utr-header">DIRECT UPI PAYMENT CONFIRMED</span>
+            <span class="badge-slop" id="badge-100">100% TO BAKER</span>
+          </div>
+          <div class="utr-ref-line" id="utr-sub">
+            <div>
+              <span style="font-size: 9px; color: #047857; text-transform: uppercase; font-weight: 700; display: block;">Bank UTR / Ref No</span>
+              <span style="font-family: monospace; font-weight: 700; color: #064e3b;" id="utr-val">ereqt3qt</span>
+            </div>
+            <div style="text-align: right;">
+              <span style="font-size: 9px; color: #047857; text-transform: uppercase; font-weight: 700; display: block;">Credited UPI</span>
+              <span style="font-weight: 600; color: #064e3b;">baker@okaxis</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Finance & Action Row -->
+        <div class="finance-row">
+          <div>
+            <div style="font-size: 10px; color: #71717a; font-weight: 600;" id="balance-label">HANDOVER BALANCE</div>
+            <div style="font-size: 18px; font-weight: 800; font-family: monospace;" id="balance-num">₹749</div>
+            <div style="font-size: 11px; font-weight: 700; color: #047857; margin-top: 2px;" id="token-status">₹1 Token Paid</div>
+          </div>
+
+          <button class="baked-btn slop-moving-border" id="btn-baked">
+            <span id="btn-baked-text">Mark as Baked ✓</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step Information -->
+  <div class="step-banner" id="step-banner">
+    <strong>Step 0: Vibecoded Slop Found</strong>
+    Rainbow rotating buttons, glowing borders, ugly green crypto-style UTR box with alphanumeric gibberish (ereqt3qt), and screaming uppercase text.
+  </div>
+
+  <script>
+    let currentStep = 0;
+    const totalSteps = 5;
+    let isPlaying = false;
+    let timer = null;
+
+    const descriptions = [
+      {
+        title: "Step 0: Vibecoded Slop Detected",
+        text: "Notice the tells: rotating rainbow button, glowing moving border, and a cluttered green box screaming 'BANK UTR ereqt3qt' with uppercase tracking."
+      },
+      {
+        title: "Step 1: Spacing & Rhythm Pass",
+        text: "Clean 4px alignment. Removed overlapping button paddings, normalized inner card margins to 16px, and aligned financial ledger cleanly."
+      },
+      {
+        title: "Step 2: Surfaces & Color Pass",
+        text: "Rainbow gradient removed → replaced by solid graphite #09090b. Glowing animated borders removed → quiet hairline depth."
+      },
+      {
+        title: "Step 3: Kill the UTR Drama & Add Official Logos",
+        text: "Erased fake alphanumeric 'ereqt3qt' and ugly green '100% TO BAKER' box. Replaced with quiet 'Paid via UPI' badge and official GPay / PhonePe marks."
+      },
+      {
+        title: "Step 4: Quiet Craft & Final Polish",
+        text: "Sentence case typography, tabular figures, and balanced hierarchy. The screen looks handcrafted for an artisan boutique bakery, not an AI template."
+      }
+    ];
+
+    function updateDOM(step) {
+      currentStep = step;
+      document.getElementById('step-label').innerText = descriptions[step].title;
+      document.getElementById('step-banner').innerHTML = `<strong>${descriptions[step].title}</strong>${descriptions[step].text}`;
+
+      // Update Timeline Indicators
+      const steps = document.querySelectorAll('.timeline-step');
+      steps.forEach((s, idx) => {
+        const fill = s.querySelector('.timeline-fill');
+        if (idx <= step) {
+          fill.style.width = '100%';
+        } else {
+          fill.style.width = '0%';
+        }
+      });
+
+      // Redline visibility
+      const rlRainbow = document.getElementById('redline-rainbow');
+      const rlUtr = document.getElementById('redline-utr');
+      const rlMoving = document.getElementById('redline-moving');
+
+      if (step === 0) {
+        rlRainbow.classList.add('visible');
+        rlUtr.classList.add('visible');
+        rlMoving.classList.add('visible');
+      } else {
+        rlRainbow.classList.remove('visible');
+        rlUtr.classList.remove('visible');
+        rlMoving.classList.remove('visible');
+      }
+
+      // Step Changes
+      const btnNew = document.getElementById('btn-new');
+      const btnBaked = document.getElementById('btn-baked');
+      const utrBox = document.getElementById('utr-box');
+      const balanceLabel = document.getElementById('balance-label');
+      const tokenStatus = document.getElementById('token-status');
+
+      if (step >= 2) {
+        btnNew.className = 'new-btn craft-btn';
+        btnBaked.className = 'baked-btn craft-action-btn';
+      } else {
+        btnNew.className = 'new-btn slop-rainbow';
+        btnBaked.className = 'baked-btn slop-moving-border';
+      }
+
+      if (step >= 3) {
+        utrBox.style.background = '#ffffff';
+        utrBox.style.border = '1px solid #e4e4e7';
+        utrBox.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="color: #059669; font-weight: 700;">✓</span>
+              <span style="font-size: 12px; font-weight: 700; color: #09090b;">Token Paid via UPI</span>
+            </div>
+            <span style="font-size: 11px; font-weight: 600; color: #71717a;">Google Pay / PhonePe</span>
+          </div>
+        `;
+        tokenStatus.innerText = '✓ ₹1 Token Paid (UPI)';
+      } else {
+        utrBox.style.background = '#ecfdf5';
+        utrBox.style.border = '1px solid #a7f3d0';
+        utrBox.innerHTML = `
+          <div class="utr-title">
+            <span>DIRECT UPI PAYMENT CONFIRMED</span>
+            <span class="badge-slop">100% TO BAKER</span>
+          </div>
+          <div class="utr-ref-line">
+            <div>
+              <span style="font-size: 9px; color: #047857; text-transform: uppercase; font-weight: 700; display: block;">Bank UTR / Ref No</span>
+              <span style="font-family: monospace; font-weight: 700; color: #064e3b;">ereqt3qt</span>
+            </div>
+            <div style="text-align: right;">
+              <span style="font-size: 9px; color: #047857; text-transform: uppercase; font-weight: 700; display: block;">Credited UPI</span>
+              <span style="font-weight: 600; color: #064e3b;">baker@okaxis</span>
+            </div>
+          </div>
+        `;
+        tokenStatus.innerText = '₹1 Token Paid';
+      }
+
+      if (step >= 4) {
+        balanceLabel.innerText = 'Handover balance';
+        balanceLabel.style.textTransform = 'none';
+        balanceLabel.style.fontWeight = '500';
+      } else {
+        balanceLabel.innerText = 'HANDOVER BALANCE';
+        balanceLabel.style.textTransform = 'uppercase';
+        balanceLabel.style.fontWeight = '700';
+      }
+    }
+
+    function goToStep(s) {
+      updateDOM(s);
+    }
+
+    document.getElementById('btn-play').addEventListener('click', () => {
+      if (isPlaying) {
+        clearInterval(timer);
+        isPlaying = false;
+        document.getElementById('btn-play').innerText = '▶ Play Story';
+        return;
+      }
+
+      isPlaying = true;
+      document.getElementById('btn-play').innerText = '❚❚ Pause';
+      let s = 0;
+      goToStep(s);
+
+      timer = setInterval(() => {
+        s++;
+        if (s >= totalSteps) {
+          clearInterval(timer);
+          isPlaying = false;
+          document.getElementById('btn-play').innerText = '↺ Replay';
+          return;
+        }
+        goToStep(s);
+      }, 2400);
+    });
+
+    // Browser MediaRecorder for Video Export
+    document.getElementById('btn-record').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-record');
+      btn.innerText = '● Recording...';
+      btn.style.background = '#dc2626';
+
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { displaySurface: "browser" },
+          audio: false
+        });
+
+        const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        const chunks = [];
+        recorder.ondataavailable = e => chunks.push(e.data);
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'cakeflow-unslop-story.webm';
+          a.click();
+          btn.innerText = '● Record Video';
+          btn.style.background = '#ef4444';
+        };
+
+        recorder.start();
+
+        // Run story from 0 to 4
+        let s = 0;
+        goToStep(s);
+        const recTimer = setInterval(() => {
+          s++;
+          if (s >= totalSteps) {
+            clearInterval(recTimer);
+            setTimeout(() => {
+              recorder.stop();
+              stream.getTracks().forEach(t => t.stop());
+            }, 1000);
+            return;
+          }
+          goToStep(s);
+        }, 2200);
+
+      } catch (err) {
+        alert("Screen recording cancelled or not supported in this browser window.");
+        btn.innerText = '● Record Video';
+        btn.style.background = '#ef4444';
+      }
+    });
+
+    // Initialize
+    updateDOM(0);
+  </script>
+</body>
+</html>

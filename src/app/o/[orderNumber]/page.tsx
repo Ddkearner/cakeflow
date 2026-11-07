@@ -41,7 +41,7 @@ import {
 // =============================================================================
 // OFFICIAL VECTOR LOGOS (UNSLOPPED & AUTHENTIC)
 // =============================================================================
-function GPayLogo({ className = "w-5 h-5" }: { className?: string }) {
+function GPayLogo({ className = "w-6 h-6" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none">
       <path
@@ -68,12 +68,13 @@ function PhonePeLogo({ className = "w-6 h-6" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 36 36" fill="none">
       <rect width="36" height="36" rx="8" fill="#5F259F" />
+      <circle cx="18" cy="18" r="12" fill="#FFFFFF" />
       <path
-        d="M20.2 11h3.3v2.6h-3.3v2.4c2.3.2 4 1.3 4 3.6 0 2.6-2.2 4.2-5.3 4.2h-1.6v5.4h-3.3V11h6.2zm-2.9 9.2h1.4c1.3 0 2.2-.6 2.2-1.6 0-1.1-.9-1.5-2.2-1.5h-1.4v3.1z"
-        fill="#FFFFFF"
+        d="M19.2 11h2.8v2.6h-2.8v2.3c2.1.2 3.6 1.3 3.6 3.4 0 2.4-1.9 3.8-4.7 3.8h-1.5v5h-2.9V11h5.5zm-2.6 8.7h1.3c1.2 0 2-.6 2-1.5 0-1-.8-1.4-2-1.4h-1.3v2.9z"
+        fill="#5F259F"
       />
       <path
-        d="M23.1 8.2l-5.6 5.4h3.7l4.2-4.1c-.7-.5-1.5-.9-2.3-1.3z"
+        d="M23.5 9.2l-5.3 5.2h3.5l4-3.9c-.7-.5-1.4-.9-2.2-1.3z"
         fill="#00D2A0"
       />
     </svg>
@@ -652,45 +653,44 @@ export default function CustomerCheckoutPage() {
           /* ===================================================================
               VIEW: PHONEPE-STYLE CLEAN PAYMENT SUCCESS & RECEIPT
               =================================================================== */
-          <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300 ease-out">
-            {/* Celebratory Hero (Dignified & Crafted) */}
-            <div className="flex flex-col items-center text-center pt-4 pb-2 space-y-2 print:hidden">
-              <div className="w-14 h-14 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20">
-                <Check className="w-7 h-7 stroke-[3]" />
+          <div className="space-y-4 animate-in fade-in duration-200">
+            {/* Celebratory Receipt Header */}
+            <div className="flex flex-col items-center text-center pt-2 pb-1 space-y-2 print:hidden">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 flex items-center justify-center">
+                <Check className="w-6 h-6 stroke-[2.5]" />
               </div>
 
-              {/* Amount & Status Headline */}
               <div className="space-y-1">
-                <div className="text-3xl font-extrabold text-zinc-950 tracking-tight font-sans">
-                  ₹{order.token_amount}
+                <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-zinc-100 text-xs font-semibold text-zinc-700">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span>Order Confirmed • #{order.order_number}</span>
                 </div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Booking Advance Confirmed</span>
-                </div>
-                <p className="text-xs text-zinc-500 pt-0.5">
-                  Slot locked with <span className="font-semibold text-zinc-800">{baker.name}</span>
+                <h2 className="text-xl font-bold text-zinc-950 tracking-tight">
+                  Advance Token Paid (₹{order.token_amount})
+                </h2>
+                <p className="text-xs text-zinc-500">
+                  Your cake slot is reserved with <span className="font-semibold text-zinc-900">{baker.name}</span>
                 </p>
               </div>
             </div>
 
-            {/* The PhonePe Summary Card (Kaam Ki Cheeje) */}
+            {/* The Clean Receipt Voucher */}
             <div
               id="receipt-voucher"
               className="rounded-3xl bg-[#f4f4f5] border border-zinc-200/80 p-4 space-y-4 shadow-xs print:bg-white print:border-none print:p-0"
             >
               {/* Cake Details */}
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <div className="flex items-center justify-between text-[11px] font-mono text-zinc-500">
                   <span>Order #{order.order_number}</span>
                   <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold text-[10px]">
                     Token Paid ✓
                   </span>
                 </div>
-                <h3 className="text-xl font-bold text-zinc-950 leading-snug">
+                <h3 className="text-lg font-bold text-zinc-950 leading-snug">
                   {order.weight} {order.flavour}
                 </h3>
-                <div className="flex items-center gap-2 text-xs text-zinc-600 font-medium">
+                <div className="flex items-center gap-2 text-xs text-zinc-600 font-medium pt-0.5">
                   <span className="px-2 py-0.5 rounded-md bg-white border border-zinc-200/60 text-[11px] font-semibold text-zinc-800">
                     {order.is_eggless ? "100% Eggless" : "With Egg"}
                   </span>
@@ -701,184 +701,155 @@ export default function CustomerCheckoutPage() {
                 </div>
               </div>
 
-                {/* Handover & Slot Schedule */}
-                <div className="p-3.5 rounded-2xl bg-white border border-zinc-200/60 space-y-2 text-xs">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-0.5 min-w-0">
-                      <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider">
-                        Date & Ready Time
-                      </span>
-                      <div className="font-bold text-zinc-900">
-                        {order.delivery_date} ({order.time_slot})
-                      </div>
-                    </div>
-                    <span className="px-2 py-0.5 rounded-md bg-zinc-100 text-[11px] font-semibold text-zinc-700 shrink-0">
-                      {order.fulfilment_type === "delivery" ? "Home Delivery" : "Self Pickup"}
-                    </span>
-                  </div>
-
-                  <div className="pt-2 border-t border-zinc-100 flex items-start gap-2 text-zinc-700">
-                    <MapPin className="w-3.5 h-3.5 shrink-0 text-zinc-400 mt-0.5" />
-                    <div className="min-w-0 text-[11px]">
-                      <div className="font-semibold text-zinc-900">
-                        {order.fulfilment_type === "delivery" ? "Deliver to:" : "Pickup from:"}
-                      </div>
-                      <div className="text-zinc-500 mt-0.5 break-words">
-                        {order.fulfilment_type === "delivery"
-                          ? order.delivery_address || "Address shared with baker"
-                          : baker.pickup_address}
-                      </div>
-                      {order.fulfilment_type === "pickup" && baker.google_maps_url && (
-                        <a
-                          href={baker.google_maps_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 mt-1 hover:underline print:hidden"
-                        >
-                          <span>Open in Google Maps</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Message on Cake (if present) */}
-                {order.cake_message && order.cake_message.trim() && (
-                  <div className="p-3 rounded-2xl bg-white border border-zinc-200/60 space-y-0.5">
+              {/* Handover & Slot Schedule */}
+              <div className="p-3.5 rounded-2xl bg-white border border-zinc-200/60 space-y-2 text-xs">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-0.5 min-w-0">
                     <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider">
-                      Text to be piped on Cake
+                      Date & Ready Time
                     </span>
-                    <p className="text-sm font-semibold text-zinc-950">
-                      "{order.cake_message}"
-                    </p>
-                  </div>
-                )}
-
-                {/* Reference Photos (if uploaded) */}
-                {referenceImages.length > 0 && (
-                  <div className="p-3 rounded-2xl bg-white border border-zinc-200/60 space-y-2">
-                    <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider block">
-                      Cake Design Screenshot ({referenceImages.length})
-                    </span>
-                    <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none">
-                      {referenceImages.map((imgUrl, i) => (
-                        <div
-                          key={i}
-                          onClick={() => setEnlargedImage(imgUrl)}
-                          className="cursor-pointer relative w-16 h-16 rounded-xl overflow-hidden bg-zinc-100 shrink-0 border border-zinc-200/60"
-                        >
-                          <img
-                            src={imgUrl}
-                            alt={`Design ${i + 1}`}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform"
-                          />
-                        </div>
-                      ))}
+                    <div className="font-bold text-zinc-900">
+                      {order.delivery_date} ({order.time_slot})
                     </div>
                   </div>
-                )}
-
-                {/* Selected Addons (if any) */}
-                {order.addons && order.addons.length > 0 && (
-                  <div className="p-3 rounded-2xl bg-white border border-zinc-200/60 space-y-1.5">
-                    <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider block">
-                      Party Items
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {order.addons.map((addon) => (
-                        <span
-                          key={addon.id}
-                          className="px-2 py-0.5 rounded-lg bg-zinc-100 text-zinc-800 text-xs font-medium"
-                        >
-                          {addon.name} (+₹{addon.price})
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Customer Info (if present) */}
-                {order.customer_name && (
-                  <div className="px-1 flex items-center justify-between text-xs text-zinc-600">
-                    <span>Customer:</span>
-                    <span className="font-semibold text-zinc-900">
-                      {order.customer_name} {order.customer_phone ? `(${order.customer_phone})` : ""}
-                    </span>
-                  </div>
-                )}
-
-                {/* Verified Direct UPI Payment Badge */}
-                <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200/80 space-y-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-emerald-950 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>Direct UPI Payment Confirmed</span>
-                    </span>
-                    <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full">
-                      100% TO BAKER
-                    </span>
-                  </div>
-
-                  <div className="pt-1.5 border-t border-emerald-200/60 grid grid-cols-2 gap-2 text-[11px]">
-                    <div>
-                      <span className="text-emerald-700/80 text-[10px] uppercase font-semibold block">
-                        Bank UTR / Ref No
-                      </span>
-                      <span className="font-mono font-bold text-zinc-950">
-                        {order.utr || order.transaction_id || "VERIFIED"}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-emerald-700/80 text-[10px] uppercase font-semibold block">
-                        Credited UPI ID
-                      </span>
-                      <span className="font-semibold text-zinc-950 truncate block">
-                        {baker.upi_id}
-                      </span>
-                    </div>
-                  </div>
+                  <span className="px-2 py-0.5 rounded-md bg-zinc-100 text-[11px] font-semibold text-zinc-700 shrink-0">
+                    {order.fulfilment_type === "delivery" ? "Home Delivery" : "Self Pickup"}
+                  </span>
                 </div>
 
-                {/* Financial Ledger (PhonePe Style Clear Split) */}
-                <div className="pt-3 border-t border-dashed border-zinc-300 space-y-1.5 text-xs">
-                  <div className="flex items-center justify-between text-zinc-500">
-                    <span>Total Cake Value:</span>
-                    <span className="font-semibold text-zinc-800">₹{order.total_price}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-emerald-700 font-semibold">
-                    <span className="flex items-center gap-1">
-                      <Check className="w-3.5 h-3.5 stroke-[3]" /> Token Advance Paid:
-                    </span>
-                    <span>₹{order.token_amount}</span>
-                  </div>
-                  <div className="pt-2 border-t border-zinc-200 flex items-center justify-between text-zinc-950 font-bold">
-                    <div className="space-y-0.5">
-                      <div>Balance at Handover:</div>
-                      <div className="text-[10px] text-zinc-400 font-normal">
-                        Pay when you receive the cake
-                      </div>
+                <div className="pt-2 border-t border-zinc-100 flex items-start gap-2 text-zinc-700">
+                  <MapPin className="w-3.5 h-3.5 shrink-0 text-zinc-400 mt-0.5" />
+                  <div className="min-w-0 text-[11px]">
+                    <div className="font-semibold text-zinc-900">
+                      {order.fulfilment_type === "delivery" ? "Deliver to:" : "Pickup from:"}
                     </div>
-                    <span className="text-lg text-zinc-950 font-extrabold">₹{order.balance_amount}</span>
+                    <div className="text-zinc-500 mt-0.5 break-words">
+                      {order.fulfilment_type === "delivery"
+                        ? order.delivery_address || "Address shared with baker"
+                        : baker.pickup_address}
+                    </div>
+                    {order.fulfilment_type === "pickup" && baker.google_maps_url && (
+                      <a
+                        href={baker.google_maps_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 mt-1 hover:underline print:hidden"
+                      >
+                        <span>Open in Google Maps</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
 
+              {/* Message on Cake (if present) */}
+              {order.cake_message && order.cake_message.trim() && (
+                <div className="p-3 rounded-2xl bg-white border border-zinc-200/60 space-y-0.5 text-xs">
+                  <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider">
+                    Text on Cake
+                  </span>
+                  <p className="font-semibold text-zinc-950">
+                    "{order.cake_message}"
+                  </p>
+                </div>
+              )}
+
+              {/* Reference Photos (if uploaded) */}
+              {referenceImages.length > 0 && (
+                <div className="p-3 rounded-2xl bg-white border border-zinc-200/60 space-y-2 text-xs">
+                  <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider block">
+                    Design Reference Photos ({referenceImages.length})
+                  </span>
+                  <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none">
+                    {referenceImages.map((imgUrl, i) => (
+                      <div
+                        key={i}
+                        onClick={() => setEnlargedImage(imgUrl)}
+                        className="cursor-pointer relative w-16 h-16 rounded-xl overflow-hidden bg-zinc-100 shrink-0 border border-zinc-200/60"
+                      >
+                        <img
+                          src={imgUrl}
+                          alt={`Design ${i + 1}`}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Selected Addons (if any) */}
+              {order.addons && order.addons.length > 0 && (
+                <div className="p-3 rounded-2xl bg-white border border-zinc-200/60 space-y-1.5 text-xs">
+                  <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider block">
+                    Party Items
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {order.addons.map((addon) => (
+                      <span
+                        key={addon.id}
+                        className="px-2 py-0.5 rounded-lg bg-zinc-100 text-zinc-800 text-xs font-medium"
+                      >
+                        {addon.name} (+₹{addon.price})
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Customer Info (if present) */}
+              {order.customer_name && (
+                <div className="px-1 flex items-center justify-between text-xs text-zinc-600">
+                  <span>Customer</span>
+                  <span className="font-semibold text-zinc-900">
+                    {order.customer_name} {order.customer_phone ? `(${order.customer_phone})` : ""}
+                  </span>
+                </div>
+              )}
+
+              {/* Financial Ledger (Clean & Honest) */}
+              <div className="p-3.5 rounded-2xl bg-white border border-zinc-200/60 space-y-2 text-xs">
+                <div className="flex items-center justify-between text-zinc-500">
+                  <span>Total Order Value</span>
+                  <span className="font-semibold text-zinc-800 font-mono">₹{order.total_price}</span>
+                </div>
+                <div className="flex items-center justify-between text-emerald-800 font-medium">
+                  <span className="flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Advance Token Paid (UPI)</span>
+                  </span>
+                  <span className="font-bold font-mono">₹{order.token_amount}</span>
+                </div>
+                <div className="pt-2 border-t border-zinc-100 flex items-center justify-between text-zinc-950 font-bold">
+                  <div className="space-y-0.5">
+                    <div>Balance Due at Pickup</div>
+                    <div className="text-[10px] text-zinc-400 font-normal">
+                      Pay remaining when you receive the cake
+                    </div>
+                  </div>
+                  <span className="text-base font-mono">₹{order.balance_amount}</span>
+                </div>
+              </div>
+            </div>
+
             {/* Action Buttons (WhatsApp + Save Receipt) */}
             <div className="space-y-2 pt-1 print:hidden">
               <button
+                type="button"
                 onClick={handleSendSimpleWhatsApp}
-                className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-xs"
+                className="w-full py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 active:scale-[0.99] text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
               >
-                <svg className="w-4 h-4 fill-white shrink-0" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 fill-emerald-400 shrink-0" viewBox="0 0 24 24">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                 </svg>
                 <span>Notify {baker.name} on WhatsApp</span>
               </button>
 
               <button
+                type="button"
                 onClick={handleDownloadPdf}
-                className="w-full py-3 rounded-2xl bg-white hover:bg-zinc-50 border border-zinc-200/80 text-zinc-800 font-semibold text-xs transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-2xs"
+                className="w-full py-3 rounded-2xl bg-white hover:bg-zinc-50 border border-zinc-200/80 text-zinc-800 font-semibold text-xs transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-2xs cursor-pointer"
               >
                 <Download className="w-4 h-4 text-zinc-600" />
                 <span>Save PDF Receipt</span>
@@ -1414,83 +1385,22 @@ export default function CustomerCheckoutPage() {
               </div>
             )}
 
-            {/* STEP 2: UTR MANUAL VERIFICATION (ONLY SHOWN IF RETURNED / NOT DETECTED / FAILED) */}
-            {!showManualUtr ? (
-              <div className="pt-2 border-t border-zinc-100 text-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    playTapSound();
-                    setShowManualUtr(true);
-                  }}
-                  className="text-[11px] text-zinc-500 hover:text-zinc-950 font-medium underline"
-                >
-                  Payment completed on app but not auto-confirmed? Enter UTR
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3 pt-1 border-t border-zinc-100 animate-in fade-in duration-150">
-                <div className="p-3.5 rounded-2xl bg-[#f4f4f5] border border-zinc-200/80 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-zinc-900">
-                      Step 2: Enter 12-digit UTR
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handlePasteClipboard}
-                      className="text-[11px] font-semibold text-zinc-700 hover:text-zinc-950 flex items-center gap-1 bg-white hover:bg-zinc-100 px-2 py-0.5 rounded-md border border-zinc-200/80 transition-colors"
-                    >
-                      <Copy className="w-3 h-3 text-zinc-400" />
-                      <span>{pastedSuccess ? "Pasted! ✓" : "Paste from Clipboard"}</span>
-                    </button>
-                  </div>
-
-                  <div className="relative">
-                    <input
-                      type="text"
-                      maxLength={18}
-                      placeholder="e.g. 429104820194"
-                      value={utrInput}
-                      onChange={(e) => {
-                        setUtrInput(e.target.value.replace(/[^0-9A-Za-z]/g, ""));
-                        setUtrError(null);
-                      }}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-zinc-300 text-sm font-mono font-bold tracking-wider text-zinc-950 placeholder-zinc-400 focus:outline-none focus:border-zinc-950 shadow-2xs"
-                    />
-                  </div>
-
-                  {utrError && (
-                    <p className="text-[10px] text-red-600 font-medium">
-                      {utrError}
-                    </p>
-                  )}
-
-                  <p className="text-[10px] text-zinc-400 leading-tight">
-                    Found in your GPay / PhonePe / Paytm payment screen under UPI Ref / UTR.
-                  </p>
-                </div>
-
-                {/* Confirm & Verify Button */}
-                <button
-                  type="button"
-                  disabled={isVerifyingUtr}
-                  onClick={handleVerifyUtr}
-                  className="w-full py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 active:scale-[0.99] text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-xs disabled:opacity-50"
-                >
-                  {isVerifyingUtr ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Verifying Token with Bank...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      <span>Verify & Confirm Booking ✓</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
+            {/* 1-Tap Instant Payment Confirmation (Zero UTR drama) */}
+            <div className="pt-2 border-t border-zinc-100 space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  completeOrderPayment("UPI_CONFIRMED", "upi_direct");
+                }}
+                className="w-full py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 active:scale-[0.99] text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+              >
+                <Check className="w-4 h-4 stroke-[2.5]" />
+                <span>I've Sent ₹{tokenAmount} — Confirm Booking ✓</span>
+              </button>
+              <p className="text-[10px] text-zinc-400 text-center">
+                Tap above once you approve payment in Google Pay, PhonePe or your bank app.
+              </p>
+            </div>
           </div>
         </div>
       )}

@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DotPattern } from "@/components/ui/dot-pattern";
-import { RainbowButton } from "@/components/ui/rainbow-button";
 import { cn } from "@/lib/utils";
 import { ArrowRight, ChefHat, Search } from "lucide-react";
 
@@ -26,7 +25,7 @@ export default function Home() {
         {/* Brand Header */}
         <div className="space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-100 text-xs font-semibold text-zinc-700">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
             <span>Ready for Real Bakers & Orders</span>
           </div>
           <h1 className="select-none text-5xl md:text-6xl font-extrabold tracking-tight text-zinc-950">
@@ -40,11 +39,14 @@ export default function Home() {
         {/* Primary Action: Open Kitchen POS */}
         <div className="space-y-3">
           <Link href="/baker" className="block w-full">
-            <RainbowButton className="w-full h-12 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm">
-              <ChefHat className="w-4 h-4" />
+            <button
+              type="button"
+              className="w-full h-12 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-xs transition-all active:scale-98 cursor-pointer"
+            >
+              <ChefHat className="w-4 h-4 text-zinc-400" />
               <span>Open Kitchen POS Dashboard</span>
-              <ArrowRight className="w-4 h-4" />
-            </RainbowButton>
+              <ArrowRight className="w-4 h-4 text-zinc-400" />
+            </button>
           </Link>
 
           {/* Customer Order Search Form */}
