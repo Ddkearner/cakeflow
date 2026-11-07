@@ -833,31 +833,6 @@ export default function BakerPOSPage() {
           </div>
         </header>
 
-        {/* 1-Tap Notice if UPI ID or Phone is unconfigured / default demo */}
-        {(!baker.upi_id || baker.upi_id === "sugarbloom@okhdfcbank" || !baker.phone || baker.phone === "919876543210") && (
-          <div className="px-4 pt-2">
-            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center justify-between gap-2 text-xs text-amber-900">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                <span className="font-semibold text-[11px] truncate">
-                  Setup your real UPI ID & WhatsApp to receive payments
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  playTapSound();
-                  setSettingsTab("store");
-                  setShowSettingsModal(true);
-                }}
-                className="px-2.5 py-1 rounded-lg bg-amber-900 hover:bg-amber-800 text-white font-bold text-[10px] shrink-0 active:scale-95 transition-colors cursor-pointer"
-              >
-                Setup Store
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* 3-Segment Switcher with Sliding Motion Pill */}
         <div className="px-4 py-2 bg-white">
           <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-zinc-100 text-xs font-semibold relative">
