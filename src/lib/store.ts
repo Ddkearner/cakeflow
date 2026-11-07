@@ -241,6 +241,14 @@ export function saveLocalOrder(order: Order): void {
   syncOrderToCloud(order).catch(() => {});
 }
 
+export function deleteLocalOrder(orderId: string): void {
+  if (typeof window === "undefined") return;
+  const orders = getLocalOrders().filter((o) => o.id !== orderId);
+  localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+  notifyOrdersUpdated(orders);
+  supabase.from("orders").delete().eq("id", orderId).then(() => {}, () => {});
+}
+
 export function getOrderByNumber(orderNumber: string): Order | undefined {
   const orders = getLocalOrders();
   const normalized = orderNumber.toUpperCase().replace("#", "");
