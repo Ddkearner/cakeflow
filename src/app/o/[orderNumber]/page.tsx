@@ -17,6 +17,7 @@ import {
 } from "@/lib/utils";
 import { CheckoutPageSkeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
+import { RainbowButton } from "@/components/ui/rainbow-button";
 import {
   Check,
   MapPin,
@@ -884,15 +885,10 @@ export default function CustomerCheckoutPage() {
           ======================================================================= */}
       {!isPaid && (
         <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-zinc-100 px-4 py-3 max-w-md mx-auto print:hidden">
-          <button
-            type="button"
+          <RainbowButton
             disabled={isPaying}
             onClick={handlePayAndConfirm}
-            className={`w-full h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-xs ${
-              isPaying
-                ? "bg-zinc-800 text-zinc-300 cursor-not-allowed"
-                : "bg-zinc-950 hover:bg-zinc-900 text-white"
-            }`}
+            className="w-full h-12 rounded-2xl font-bold text-sm shadow-md"
           >
             {isPaying ? (
               <>
@@ -905,8 +901,8 @@ export default function CustomerCheckoutPage() {
                 <span>Pay ₹{tokenAmount} Token via UPI</span>
               </>
             )}
-          </button>
-          <p className="text-[10px] text-zinc-400 text-center mt-1 font-medium">
+          </RainbowButton>
+          <p className="text-[10px] text-zinc-400 text-center mt-1.5 font-medium">
             GPay • PhonePe • Paytm • CRED • Instant Confirmation
           </p>
         </div>
