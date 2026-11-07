@@ -424,65 +424,30 @@ export async function fetchRemoteOrdersByBaker(bakerId: string): Promise<Order[]
       created_at: d.created_at,
     }));
 
-    // Smart Non-destructive Reconciliation with local storage
-    if (typeof window !== "undefined" && orders.length > 0) {
+    // Authoritative Sync with local storage (Keeps Laptop & Mobile 100% Identical)
+    if (typeof window !== "undefined") {
       const local = getLocalOrders();
-      const localMap = new Map<string, Order>();
-      local.forEach((o) => localMap.set(o.id, o));
+      // Keep any other baker's local data
+      const otherBakers = local.filter((o) => o.baker_id !== bakerId);
 
-      let hasNewChanges = false;
-      const statusPrecedence: Record<Order["status"], number> = {
-        pending_token: 1,
-        confirmed: 2,
-        baked: 3,
-        completed: 4,
-        cancelled: 5,
-      };
+      // Preserve newly created local drafts that haven't hit Supabase yet (< 60s old)
+      const now = Date.now();
+      const pendingLocalDrafts = local.filter(
+        (o) =>
+          o.baker_id === bakerId &&
+          !orders.some((ro) => ro.id === o.id) &&
+          now - new Date(o.created_at || 0).getTime() < 60000
+      );
 
-      orders.forEach((remoteOrder) => {
-        const existing = localMap.get(remoteOrder.id);
-        if (!existing) {
-          localMap.set(remoteOrder.id, remoteOrder);
-          hasNewChanges = true;
-        } else {
-          // If remote status is strictly more advanced (e.g. customer paid online: pending_token -> confirmed)
-          if (
-            statusPrecedence[remoteOrder.status] >
-            statusPrecedence[existing.status]
-          ) {
-            localMap.set(remoteOrder.id, { ...existing, ...remoteOrder });
-            hasNewChanges = true;
-          } else if (
-            statusPrecedence[existing.status] >
-            statusPrecedence[remoteOrder.status]
-          ) {
-            // Local is ahead (e.g. baker clicked baked/completed before cloud sync caught up)
-            // Re-sync local status to cloud in background
-            syncOrderToCloud(existing).catch(() => {});
-          } else {
-            // Same status: update any newly attached fields (e.g. customer name/phone/address)
-            if (
-              remoteOrder.customer_name !== existing.customer_name ||
-              remoteOrder.customer_phone !== existing.customer_phone ||
-              remoteOrder.delivery_address !== existing.delivery_address
-            ) {
-              localMap.set(remoteOrder.id, { ...existing, ...remoteOrder });
-              hasNewChanges = true;
-            }
-          }
-        }
-      });
-
-      const mergedList = Array.from(localMap.values()).sort(
+      const merged = [...pendingLocalDrafts, ...orders, ...otherBakers].sort(
         (a, b) =>
           new Date(b.created_at || 0).getTime() -
           new Date(a.created_at || 0).getTime()
       );
-      if (hasNewChanges) {
-        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(mergedList));
-        notifyOrdersUpdated(mergedList);
-      }
-      return mergedList.filter((o) => o.baker_id === bakerId);
+
+      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(merged));
+      notifyOrdersUpdated(merged);
+      return [...pendingLocalDrafts, ...orders];
     }
 
     return orders;

@@ -23,6 +23,7 @@ import {
   formatCurrency,
   buildWhatsAppLink,
 } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 import {
   X,
   ArrowLeft,
@@ -367,7 +368,7 @@ function BakerPOSContent() {
     // D. Non-destructive background sync on focus and gentle 10s interval
     const syncCloud = async () => {
       const remote = await fetchRemoteOrdersByBaker(baker.id);
-      if (remote && remote.length > 0) {
+      if (remote) {
         setOrders(remote);
       }
     };
@@ -375,11 +376,31 @@ function BakerPOSContent() {
     window.addEventListener("focus", syncCloud);
     const backgroundInterval = setInterval(syncCloud, 10000);
 
+    // E. Realtime WebSocket subscription (Instant sync between Laptop <-> Mobile)
+    const channel = supabase
+      .channel(`realtime_orders_${baker.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+        },
+        async () => {
+          const remote = await fetchRemoteOrdersByBaker(baker.id);
+          if (remote) {
+            setOrders(remote);
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       window.removeEventListener(CAKEFLOW_EVENTS.ORDERS_UPDATED, handleOrdersUpdated);
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("focus", syncCloud);
       clearInterval(backgroundInterval);
+      supabase.removeChannel(channel);
     };
   }, [baker]);
 
