@@ -43,6 +43,7 @@ import {
 import { KitchenCardSkeleton } from "@/components/ui/skeleton";
 import { RainbowButton } from "@/components/ui/rainbow-button";
 import { MovingBorderButton } from "@/components/ui/moving-border";
+import { generateReceiptPdf } from "@/lib/pdf-generator";
 import { useToast } from "@/components/ui/toast";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -1811,11 +1812,17 @@ function BakerPOSContent() {
               <div className="p-4 border-t border-zinc-100 bg-white space-y-2 shrink-0">
                 <button
                   type="button"
-                  onClick={() => window.print()}
+                  onClick={() => {
+                    if (proofOrder && baker) {
+                      playTapSound();
+                      generateReceiptPdf(proofOrder, baker);
+                      showToast("PDF Downloaded to Phone ✓", "success");
+                    }
+                  }}
                   className="w-full py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs flex items-center justify-center gap-2 active:scale-98 shadow-xs cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
-                  <span>Download / Print Proof PDF</span>
+                  <span>Download PDF Receipt</span>
                 </button>
                 <div className="flex items-center gap-2">
                   <button

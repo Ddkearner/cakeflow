@@ -18,6 +18,7 @@ import {
 import { CheckoutPageSkeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { RainbowButton } from "@/components/ui/rainbow-button";
+import { generateReceiptPdf } from "@/lib/pdf-generator";
 import { playTapSound, playSuccessSound, triggerHaptic } from "@/lib/sounds";
 import {
   Check,
@@ -570,7 +571,15 @@ export default function CustomerCheckoutPage() {
   };
 
   const handleDownloadPdf = () => {
-    window.print();
+    if (!order || !baker) return;
+    playTapSound();
+    try {
+      generateReceiptPdf(order, baker);
+      showToast("PDF Downloaded to Phone ✓", "success");
+    } catch (e) {
+      console.error("PDF generation failed, falling back to print", e);
+      window.print();
+    }
   };
 
   const handleSendSimpleWhatsApp = () => {
@@ -852,7 +861,7 @@ export default function CustomerCheckoutPage() {
                 className="w-full py-3 rounded-2xl bg-white hover:bg-zinc-50 border border-zinc-200/80 text-zinc-800 font-semibold text-xs transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-2xs cursor-pointer"
               >
                 <Download className="w-4 h-4 text-zinc-600" />
-                <span>Save PDF Receipt</span>
+                <span>Download PDF Receipt</span>
               </button>
             </div>
           </div>
