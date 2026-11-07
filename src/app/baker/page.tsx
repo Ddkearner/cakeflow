@@ -36,7 +36,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { RainbowButton } from "@/components/ui/rainbow-button";
-import { MovingBorderButton } from "@/components/ui/moving-border";
+import { KitchenCardSkeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
 
 const WEIGHT_OPTIONS = ["0.5 Kg", "1 Kg", "1.5 Kg", "2 Kg"];
 const FLAVOUR_OPTIONS = [
@@ -70,6 +71,7 @@ const isValidCakeMessage = (msg?: string) => {
 };
 
 export default function BakerPOSPage() {
+  const { showToast } = useToast();
   const [baker, setBaker] = useState<Baker | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -427,6 +429,7 @@ export default function BakerPOSPage() {
     };
     setBaker(updatedBaker);
     saveLocalBaker(updatedBaker);
+    showToast("Settings & Menu Saved! ✓", "success");
     setSettingsSavedToast(true);
     setTimeout(() => setSettingsSavedToast(false), 2000);
   };
@@ -480,6 +483,12 @@ export default function BakerPOSPage() {
       prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
     );
 
+    if (newStatus === "baked") {
+      showToast("Order Marked as Baked & Ready! ✓", "success");
+    } else if (newStatus === "completed") {
+      showToast("Order Delivered & Handover Closed! ✓", "success");
+    }
+
     // 2. Persist locally & background sync to cloud
     const all = getLocalOrders();
     const target = all.find((o) => o.id === orderId);
@@ -495,6 +504,7 @@ export default function BakerPOSPage() {
   };
 
   const handleSendViaWhatsApp = (order: Order) => {
+    showToast("Opening WhatsApp...", "info");
     const link = getCustomerLink(order.order_number);
     const message = `Please confirm your cake order details and advance token (₹${order.token_amount}) here:\n\n${link}\n\n${order.weight} ${order.flavour} (${order.is_eggless ? "100% Eggless" : "With Egg"})\nTime: ${order.time_slot}\nBalance Due at Pickup: ₹${order.balance_amount}`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`, "_blank");
@@ -504,6 +514,7 @@ export default function BakerPOSPage() {
     const link = getCustomerLink(orderNum);
     navigator.clipboard.writeText(link);
     setCopiedLink(true);
+    showToast("Booking Link Copied! ✓", "success");
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
@@ -648,14 +659,7 @@ export default function BakerPOSPage() {
           {isLoading ? (
             <div className="space-y-3 pt-2">
               {[1, 2, 3].map((n) => (
-                <div key={n} className="p-4 rounded-2xl bg-[#f4f4f5] animate-pulse space-y-3">
-                  <div className="flex justify-between">
-                    <div className="h-5 w-40 bg-zinc-200 rounded-md" />
-                    <div className="h-5 w-16 bg-zinc-200 rounded-full" />
-                  </div>
-                  <div className="h-3 w-48 bg-zinc-200 rounded" />
-                  <div className="h-10 bg-white rounded-xl" />
-                </div>
+                <KitchenCardSkeleton key={n} />
               ))}
             </div>
           ) : displayedOrders.length === 0 ? (

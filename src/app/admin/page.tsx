@@ -22,11 +22,15 @@ import {
   LogOut,
   X,
 } from "lucide-react";
+import { AdminDashboardSkeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
 
 const ADMIN_PASSWORD =
   process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "124520";
 
 export default function AdminPage() {
+  const { showToast } = useToast();
+
   // Auth state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -136,6 +140,7 @@ export default function AdminPage() {
 
     saveLocalBaker(newBaker);
     refreshData();
+    showToast(`Baker Studio "${newBaker.name}" provisioned! ✓`, "success");
     setShowAddModal(false);
 
     setName("");
@@ -150,6 +155,7 @@ export default function AdminPage() {
     if (window.confirm(`Delete ${bakerName}? This cannot be undone.`)) {
       deleteLocalBaker(bakerId);
       refreshData();
+      showToast(`Removed "${bakerName}"`, "info");
     }
   };
 
@@ -158,6 +164,7 @@ export default function AdminPage() {
     const magicLink = `${origin}/baker?token=${token}`;
     navigator.clipboard.writeText(magicLink);
     setCopiedId(id);
+    showToast("Magic Link Copied to Clipboard! ✓", "success");
     setTimeout(() => setCopiedId(null), 1800);
   };
 
@@ -228,8 +235,8 @@ export default function AdminPage() {
 
   if (isAuthChecking) {
     return (
-      <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
-        <div className="w-5 h-5 border-2 border-zinc-900 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-zinc-50 py-8">
+        <AdminDashboardSkeleton />
       </div>
     );
   }

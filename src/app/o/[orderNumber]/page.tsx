@@ -15,6 +15,8 @@ import {
   buildUpiIntentLink,
   buildWhatsAppLink,
 } from "@/lib/utils";
+import { CheckoutPageSkeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
 import {
   Check,
   MapPin,
@@ -56,10 +58,12 @@ export default function CustomerCheckoutPage() {
 
   // Payment & Modal States
   const [isPaid, setIsPaid] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
 
+  const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -175,7 +179,9 @@ export default function CustomerCheckoutPage() {
   const finalBalanceAmount = Math.max(0, finalTotalPrice - tokenAmount);
 
   const handlePayAndConfirm = () => {
-    if (!order || !baker) return;
+    if (!order || !baker || isPaying) return;
+    setIsPaying(true);
+    showToast("Locking your slot & opening UPI...", "info");
 
     const updated: Order = {
       ...order,
@@ -195,7 +201,6 @@ export default function CustomerCheckoutPage() {
 
     saveLocalOrder(updated);
     setOrder(updated);
-    setIsPaid(true);
 
     const upiLink = buildUpiIntentLink({
       upiId: baker.upi_id,
@@ -206,9 +211,17 @@ export default function CustomerCheckoutPage() {
 
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isMobile) {
-      window.location.href = upiLink;
+      setTimeout(() => {
+        setIsPaid(true);
+        setIsPaying(false);
+        window.location.href = upiLink;
+      }, 350);
     } else {
-      setShowQrModal(true);
+      setTimeout(() => {
+        setIsPaid(true);
+        setIsPaying(false);
+        setShowQrModal(true);
+      }, 350);
     }
   };
 
@@ -218,6 +231,7 @@ export default function CustomerCheckoutPage() {
 
   const handleSendSimpleWhatsApp = () => {
     if (!order || !baker) return;
+    showToast("Opening WhatsApp...", "info");
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const msg = `Hi ${baker.name}, I have confirmed Order #${order.order_number} (${customerName || "Customer"}) and paid ₹${tokenAmount} token advance.\n\nReceipt: ${origin}/o/${order.order_number}`;
     const waUrl = buildWhatsAppLink(baker.phone, msg);
@@ -228,26 +242,15 @@ export default function CustomerCheckoutPage() {
     if (!baker) return;
     navigator.clipboard.writeText(baker.upi_id);
     setCopiedUpi(true);
+    showToast("UPI ID Copied to clipboard!", "success");
     setTimeout(() => setCopiedUpi(false), 2000);
   };
 
   // =========================================================================
-  // SKELETON LOADER
+  // HIGH-CRAFT SHIMMER SKELETON
   // =========================================================================
   if (isLoading) {
-    return (
-      <main className="max-w-md mx-auto min-h-[100dvh] bg-white px-5 pt-6 pb-12 space-y-4">
-        <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
-          <div className="space-y-1.5">
-            <div className="h-5 w-32 rounded-lg bg-zinc-100 animate-pulse" />
-            <div className="h-3.5 w-44 rounded-md bg-zinc-100 animate-pulse" />
-          </div>
-          <div className="h-7 w-20 rounded-full bg-zinc-100 animate-pulse" />
-        </div>
-        <div className="h-44 w-full rounded-3xl bg-[#f4f4f5] animate-pulse" />
-        <div className="h-64 w-full rounded-3xl bg-[#f4f4f5] animate-pulse" />
-      </main>
-    );
+    return <CheckoutPageSkeleton />;
   }
 
   if (!order || !baker) {
@@ -758,11 +761,25 @@ export default function CustomerCheckoutPage() {
         <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-zinc-100 px-4 py-3 max-w-md mx-auto print:hidden">
           <button
             type="button"
+            disabled={isPaying}
             onClick={handlePayAndConfirm}
-            className="w-full h-12 rounded-2xl bg-zinc-950 hover:bg-zinc-900 active:scale-[0.99] text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-xs"
+            className={`w-full h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-xs ${
+              isPaying
+                ? "bg-zinc-800 text-zinc-300 cursor-not-allowed"
+                : "bg-zinc-950 hover:bg-zinc-900 text-white"
+            }`}
           >
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Pay ₹{tokenAmount} Token via UPI</span>
+            {isPaying ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Opening UPI App...</span>
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>Pay ₹{tokenAmount} Token via UPI</span>
+              </>
+            )}
           </button>
           <p className="text-[10px] text-zinc-400 text-center mt-1 font-medium">
             GPay • PhonePe • Paytm • CRED • Instant Confirmation
