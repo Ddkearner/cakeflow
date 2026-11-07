@@ -41,6 +41,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { KitchenCardSkeleton } from "@/components/ui/skeleton";
+import { RainbowButton } from "@/components/ui/rainbow-button";
+import { MovingBorderButton } from "@/components/ui/moving-border";
 import { useToast } from "@/components/ui/toast";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -124,6 +126,7 @@ export default function BakerPOSPage() {
     return current ? all.filter((o) => o.baker_id === current.id) : all;
   });
 
+  const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [bakingOrderId, setBakingOrderId] = useState<string | null>(null);
   
@@ -226,6 +229,7 @@ export default function BakerPOSPage() {
   }, [baker]);
 
   useEffect(() => {
+    setMounted(true);
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get("token");
 
@@ -731,7 +735,15 @@ export default function BakerPOSPage() {
     }
   };
 
-  if (!baker) return null;
+  if (!mounted || !baker) {
+    return (
+      <div className="h-[100dvh] bg-white flex flex-col p-4 max-w-xl mx-auto space-y-4 pt-16">
+        <KitchenCardSkeleton />
+        <KitchenCardSkeleton />
+        <KitchenCardSkeleton />
+      </div>
+    );
+  }
 
   // Filter calculations (Always Newest First for Waiting & Completed)
   const kitchenOrders = orders
@@ -819,17 +831,17 @@ export default function BakerPOSPage() {
               <Settings className="w-4 h-4" />
             </button>
 
-            <button
-              type="button"
+            <RainbowButton
               onClick={() => {
                 playTapSound();
                 handleStartNewOrder();
               }}
-              className="h-8 rounded-xl px-3 bg-zinc-950 hover:bg-zinc-800 text-white text-xs font-semibold active:scale-95 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+              size="sm"
+              className="h-8 rounded-xl px-3 text-xs font-semibold active:scale-95 transition-transform"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>New Order</span>
-            </button>
+            </RainbowButton>
           </div>
         </header>
 
@@ -1251,14 +1263,15 @@ export default function BakerPOSPage() {
 
                       <div className="shrink-0">
                         {ord.status === "confirmed" && (
-                          <button
-                            type="button"
+                          <MovingBorderButton
                             onClick={() => handleMarkAsBaked(ord.id)}
-                            className="h-9 px-4 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-xs transition-colors active:scale-98 shadow-xs cursor-pointer flex items-center gap-1.5"
+                            containerClassName="w-full sm:w-auto h-10"
+                            className="bg-white text-zinc-950 font-bold text-xs hover:bg-zinc-50 border border-zinc-200/80 shadow-2xs transition-transform active:scale-95"
                           >
-                            <span>{bakingOrderId === ord.id ? "Marked Ready ✓" : "Mark as Baked"}</span>
-                            <Check className="w-3.5 h-3.5 text-zinc-400" />
-                          </button>
+                            <span className="flex items-center gap-1.5 px-3">
+                              <span>{bakingOrderId === ord.id ? "🎉 Baked & Ready!" : "Mark as Baked ✓"}</span>
+                            </span>
+                          </MovingBorderButton>
                         )}
 
                         {ord.status === "baked" && (
