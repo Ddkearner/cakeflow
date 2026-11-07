@@ -38,16 +38,30 @@ export function buildUpiIntentLink({
   amount,
   orderNumber,
   txnRef,
+  app = "universal",
 }: {
   upiId: string;
   name: string;
   amount: number;
   orderNumber: string;
   txnRef?: string;
+  app?: "universal" | "gpay" | "phonepe" | "paytm";
 }): string {
   const cleanName = encodeURIComponent(name);
   const ref = txnRef || `CF${orderNumber.replace(/[^A-Za-z0-9]/g, "")}`;
-  const note = encodeURIComponent(`Token for ${orderNumber} Ref:${ref}`);
-  return `upi://pay?pa=${upiId}&pn=${cleanName}&am=${amount}&cu=INR&tn=${note}&tr=${encodeURIComponent(ref)}`;
+  // NPCI standard: alphanumeric + spaces only, max 50 chars, zero special symbols/colons
+  const note = encodeURIComponent(`CakeFlow Token ${orderNumber.replace(/[^A-Za-z0-9]/g, "")}`);
+  const query = `pa=${encodeURIComponent(upiId)}&pn=${cleanName}&am=${amount}&cu=INR&tn=${note}&tr=${encodeURIComponent(ref)}`;
+
+  if (app === "gpay") {
+    return `tez://upi/pay?${query}`;
+  }
+  if (app === "phonepe") {
+    return `phonepe://upi/pay?${query}`;
+  }
+  if (app === "paytm") {
+    return `paytmmp://upi/pay?${query}`;
+  }
+  return `upi://pay?${query}`;
 }
 

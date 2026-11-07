@@ -108,6 +108,7 @@ export default function CustomerCheckoutPage() {
 
   // Real UPI Intent Protocol & Automated UTR Verification States
   const [showVerificationSheet, setShowVerificationSheet] = useState(false);
+  const [paySheetTab, setPaySheetTab] = useState<"apps" | "qr">("apps");
   const [utrInput, setUtrInput] = useState("");
   const [activeTxnRef, setActiveTxnRef] = useState<string>(
     initialOrder?.transaction_id || ""
@@ -389,21 +390,37 @@ export default function CustomerCheckoutPage() {
       amount: tokenAmount,
       orderNumber: order.order_number,
       txnRef,
+      app: "universal",
     });
 
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    setPaySheetTab(isMobile ? "apps" : "qr");
+    setShowVerificationSheet(true);
+    setIsPaying(false);
+
     if (isMobile) {
-      showToast("Opening UPI App (GPay / PhonePe / Paytm)...", "info");
-      setTimeout(() => {
-        setIsPaying(false);
+      showToast("Launching UPI App...", "info");
+      // Synchronous direct invocation - zero setTimeout to prevent browser blocking!
+      try {
         window.location.href = upiLink;
-      }, 350);
-    } else {
-      setTimeout(() => {
-        setIsPaying(false);
-        setShowQrModal(true);
-      }, 300);
+      } catch (err) {
+        console.warn("Direct intent invoke warning:", err);
+      }
     }
+  };
+
+  const getUpiUrl = (
+    app: "universal" | "gpay" | "phonepe" | "paytm" = "universal"
+  ) => {
+    if (!baker || !order) return "";
+    return buildUpiIntentLink({
+      upiId: baker.upi_id,
+      name: baker.name,
+      amount: tokenAmount,
+      orderNumber: order.order_number,
+      txnRef: activeTxnRef || `CF${order.order_number.replace(/[^A-Za-z0-9]/g, "")}`,
+      app,
+    });
   };
 
   const handlePasteClipboard = async () => {
@@ -1130,42 +1147,181 @@ export default function CustomerCheckoutPage() {
       )}
 
       {/* =======================================================================
-          PHONEPE-STYLE 1-TAP UPI VERIFICATION SHEET (MOBILE RETURN)
+          UNIFIED 1-TAP UPI PAYMENT & VERIFICATION SHEET
           ======================================================================= */}
       {showVerificationSheet && !isPaid && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 max-w-sm w-full space-y-4 shadow-2xl relative animate-in slide-in-from-bottom-6 duration-200">
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl p-5 max-w-sm w-full space-y-3.5 shadow-2xl relative animate-in slide-in-from-bottom-6 duration-200 max-h-[92vh] overflow-y-auto">
             {/* Dismiss button */}
             <button
               onClick={() => {
                 playTapSound();
                 setShowVerificationSheet(false);
               }}
-              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-zinc-100 text-zinc-500 hover:text-zinc-950 flex items-center justify-center text-xs"
+              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-zinc-100 text-zinc-500 hover:text-zinc-950 flex items-center justify-center text-xs z-10"
             >
               ✕
             </button>
 
             {/* Header Badge & Title */}
-            <div className="text-center space-y-1.5 pt-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-900 text-xs font-bold border border-amber-200/60">
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                <span>Confirming Token Payment</span>
+            <div className="text-center space-y-1 pt-1">
+              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-bold border border-emerald-200/60">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Zero Fee Direct UPI</span>
               </div>
               <h3 className="text-lg font-bold text-zinc-950">
-                Did your payment complete?
+                Pay ₹{tokenAmount} Advance Token
               </h3>
-              <p className="text-xs text-zinc-500 max-w-xs mx-auto">
-                Advance Token <span className="font-bold text-zinc-900">₹{tokenAmount}</span> sent to{" "}
-                <span className="font-semibold text-zinc-800">{baker.name}</span>
+              <p className="text-xs text-zinc-500 max-w-xs mx-auto truncate">
+                Direct to <span className="font-semibold text-zinc-800">{baker.name}</span>
               </p>
             </div>
 
-            {/* UTR Input Card */}
-            <div className="p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200/80 space-y-2">
+            {/* Segmented Mode Switcher: Apps vs QR */}
+            <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-zinc-100 text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => {
+                  playTapSound();
+                  setPaySheetTab("apps");
+                }}
+                className={`py-1.5 rounded-lg transition-all ${
+                  paySheetTab === "apps"
+                    ? "bg-white text-zinc-950 shadow-xs"
+                    : "text-zinc-500 hover:text-zinc-900"
+                }`}
+              >
+                ⚡ UPI Apps
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  playTapSound();
+                  setPaySheetTab("qr");
+                }}
+                className={`py-1.5 rounded-lg transition-all ${
+                  paySheetTab === "qr"
+                    ? "bg-white text-zinc-950 shadow-xs"
+                    : "text-zinc-500 hover:text-zinc-900"
+                }`}
+              >
+                📷 Scan QR Code
+              </button>
+            </div>
+
+            {/* TAB 1: DIRECT UPI APPS LAUNCHER */}
+            {paySheetTab === "apps" ? (
+              <div className="space-y-2">
+                <p className="text-[11px] text-zinc-400 text-center font-medium">
+                  Tap your app to pay directly:
+                </p>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Google Pay */}
+                  <a
+                    href={getUpiUrl("gpay")}
+                    onClick={() => {
+                      playTapSound();
+                      showToast("Opening Google Pay...", "info");
+                    }}
+                    className="p-3 rounded-2xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 flex flex-col items-center justify-center text-center transition-all active:scale-95 group"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-white border border-zinc-200 flex items-center justify-center font-bold text-xs text-blue-600 shadow-2xs group-hover:scale-105 transition-transform">
+                      GPay
+                    </div>
+                    <span className="text-xs font-bold text-zinc-900 mt-1.5">
+                      Google Pay
+                    </span>
+                    <span className="text-[10px] text-zinc-400">Pay ₹{tokenAmount}</span>
+                  </a>
+
+                  {/* PhonePe */}
+                  <a
+                    href={getUpiUrl("phonepe")}
+                    onClick={() => {
+                      playTapSound();
+                      showToast("Opening PhonePe...", "info");
+                    }}
+                    className="p-3 rounded-2xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 flex flex-col items-center justify-center text-center transition-all active:scale-95 group"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs group-hover:scale-105 transition-transform">
+                      पे
+                    </div>
+                    <span className="text-xs font-bold text-zinc-900 mt-1.5">
+                      PhonePe
+                    </span>
+                    <span className="text-[10px] text-zinc-400">Pay ₹{tokenAmount}</span>
+                  </a>
+
+                  {/* Paytm */}
+                  <a
+                    href={getUpiUrl("paytm")}
+                    onClick={() => {
+                      playTapSound();
+                      showToast("Opening Paytm...", "info");
+                    }}
+                    className="p-3 rounded-2xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 flex flex-col items-center justify-center text-center transition-all active:scale-95 group"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-[#002e6e] text-white flex items-center justify-center font-bold text-[10px] shadow-2xs group-hover:scale-105 transition-transform">
+                      Paytm
+                    </div>
+                    <span className="text-xs font-bold text-zinc-900 mt-1.5">
+                      Paytm
+                    </span>
+                    <span className="text-[10px] text-zinc-400">Pay ₹{tokenAmount}</span>
+                  </a>
+
+                  {/* Universal UPI (CRED, BHIM, etc.) */}
+                  <a
+                    href={getUpiUrl("universal")}
+                    onClick={() => {
+                      playTapSound();
+                      showToast("Opening Any UPI App...", "info");
+                    }}
+                    className="p-3 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white flex flex-col items-center justify-center text-center transition-all active:scale-95 group shadow-xs"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-bold text-xs text-emerald-400 group-hover:scale-105 transition-transform">
+                      ⚡
+                    </div>
+                    <span className="text-xs font-bold text-white mt-1.5">
+                      Any UPI / BHIM
+                    </span>
+                    <span className="text-[10px] text-zinc-400">CRED & Others</span>
+                  </a>
+                </div>
+              </div>
+            ) : (
+              /* TAB 2: HIGH-CONTRAST SCAN QR CODE */
+              <div className="text-center space-y-2.5">
+                <div className="p-3 bg-white border border-zinc-200 rounded-2xl inline-block shadow-2xs">
+                  <img
+                    src={qrCodeUrl}
+                    alt="UPI QR Code"
+                    className="w-36 h-36 mx-auto rounded-xl"
+                  />
+                </div>
+
+                <div className="space-y-0.5">
+                  <div className="text-xs text-zinc-400 font-mono">
+                    {baker.upi_id}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyUpi}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:underline pt-0.5"
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>{copiedUpi ? "Copied!" : "Copy Baker UPI ID"}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2: REAL 12-DIGIT UTR VERIFICATION ENGINE */}
+            <div className="p-3 rounded-2xl bg-zinc-50 border border-zinc-200/80 space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-zinc-900 flex items-center gap-1">
-                  <span>12-digit UPI Ref / UTR</span>
+                <span className="font-bold text-zinc-900">
+                  Step 2: Enter 12-digit UTR
                 </span>
                 <button
                   type="button"
@@ -1173,7 +1329,7 @@ export default function CustomerCheckoutPage() {
                   className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-md transition-colors"
                 >
                   <Copy className="w-3 h-3" />
-                  <span>{pastedSuccess ? "Pasted! ✓" : "Paste"}</span>
+                  <span>{pastedSuccess ? "Pasted! ✓" : "Paste from Clipboard"}</span>
                 </button>
               </div>
 
@@ -1187,171 +1343,40 @@ export default function CustomerCheckoutPage() {
                     setUtrInput(e.target.value.replace(/[^0-9A-Za-z]/g, ""));
                     setUtrError(null);
                   }}
-                  className="w-full px-3.5 py-3 rounded-xl bg-white border border-zinc-300 text-sm font-mono font-bold tracking-wider text-zinc-950 placeholder-zinc-400 focus:outline-none focus:border-zinc-950 shadow-2xs"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-zinc-300 text-sm font-mono font-bold tracking-wider text-zinc-950 placeholder-zinc-400 focus:outline-none focus:border-zinc-950 shadow-2xs"
                 />
               </div>
 
-              {utrError && (
-                <p className="text-[11px] text-red-600 font-medium">
-                  {utrError}
-                </p>
-              )}
-
-              <p className="text-[10px] text-zinc-400 leading-tight">
-                Found under transaction details in your GPay / PhonePe / Paytm payment screen.
-              </p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="space-y-2 pt-1">
-              <button
-                type="button"
-                disabled={isVerifyingUtr}
-                onClick={handleVerifyUtr}
-                className="w-full py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs transition-all active:scale-[0.99] flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
-              >
-                {isVerifyingUtr ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Verifying with Baker's Bank...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>Verify & Confirm Booking</span>
-                  </>
-                )}
-              </button>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    playTapSound();
-                    setShowVerificationSheet(false);
-                    setShowQrModal(true);
-                  }}
-                  className="py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold transition-colors text-center"
-                >
-                  Scan QR Code
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    playTapSound();
-                    try {
-                      sessionStorage.removeItem("cf_upi_session");
-                    } catch {}
-                    setShowVerificationSheet(false);
-                    const upiLink = buildUpiIntentLink({
-                      upiId: baker.upi_id,
-                      name: baker.name,
-                      amount: tokenAmount,
-                      orderNumber: order.order_number,
-                    });
-                    window.location.href = upiLink;
-                  }}
-                  className="py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold transition-colors text-center"
-                >
-                  Retry Payment
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* =======================================================================
-          DESKTOP UPI QR CODE MODAL WITH INTEGRATED UTR VERIFICATION
-          ======================================================================= */}
-      {showQrModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-5 max-w-sm w-full text-center space-y-3.5 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
-            <button
-              onClick={() => setShowQrModal(false)}
-              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-[#f4f4f5] text-zinc-500 hover:text-zinc-950 flex items-center justify-center text-xs"
-            >
-              ✕
-            </button>
-
-            <div>
-              <h3 className="text-base font-bold text-zinc-950">Scan & Pay Token</h3>
-              <p className="text-xs text-zinc-500 mt-0.5">
-                Scan with GPay, PhonePe, Paytm or CRED
-              </p>
-            </div>
-
-            <div className="p-3 bg-white border border-zinc-100 rounded-2xl inline-block shadow-xs">
-              <img
-                src={qrCodeUrl}
-                alt="UPI QR Code"
-                className="w-40 h-40 mx-auto rounded-xl"
-              />
-            </div>
-
-            <div className="text-center space-y-0.5">
-              <div className="text-xl font-bold text-zinc-950">₹{tokenAmount}</div>
-              <div className="text-[11px] text-zinc-400 font-mono">
-                {baker.upi_id}
-              </div>
-            </div>
-
-            <button
-              onClick={handleCopyUpi}
-              className="w-full py-2 rounded-xl bg-[#f4f4f5] hover:bg-zinc-200 text-xs font-semibold text-zinc-800 transition-colors flex items-center justify-center gap-1.5"
-            >
-              {copiedUpi ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-emerald-700">UPI ID Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>Copy UPI ID</span>
-                </>
-              )}
-            </button>
-
-            {/* Quick UTR Input for Desktop Flow */}
-            <div className="pt-2 border-t border-zinc-200/70 text-left space-y-2">
-              <div className="text-[11px] font-bold text-zinc-900 flex items-center justify-between">
-                <span>Paid on Phone? Enter 12-digit UTR</span>
-                <button
-                  type="button"
-                  onClick={handlePasteClipboard}
-                  className="text-[10px] text-emerald-700 font-semibold hover:underline"
-                >
-                  Paste
-                </button>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="text"
-                  maxLength={18}
-                  placeholder="e.g. 429104820194"
-                  value={utrInput}
-                  onChange={(e) => {
-                    setUtrInput(e.target.value.replace(/[^0-9A-Za-z]/g, ""));
-                    setUtrError(null);
-                  }}
-                  className="flex-1 px-3 py-2 rounded-xl bg-zinc-50 border border-zinc-200 text-xs font-mono font-bold tracking-wider text-zinc-950 placeholder-zinc-400 focus:outline-none focus:border-zinc-950"
-                />
-                <button
-                  type="button"
-                  disabled={isVerifyingUtr}
-                  onClick={handleVerifyUtr}
-                  className="px-3.5 py-2 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs shrink-0 transition-transform active:scale-95 disabled:opacity-50"
-                >
-                  {isVerifyingUtr ? "..." : "Verify ✓"}
-                </button>
-              </div>
               {utrError && (
                 <p className="text-[10px] text-red-600 font-medium">
                   {utrError}
                 </p>
               )}
+
+              <p className="text-[10px] text-zinc-400 leading-tight">
+                Copied automatically from your GPay / PhonePe payment success screen.
+              </p>
             </div>
+
+            {/* Confirm & Verify Button */}
+            <button
+              type="button"
+              disabled={isVerifyingUtr}
+              onClick={handleVerifyUtr}
+              className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+            >
+              {isVerifyingUtr ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Verifying Token with Bank...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-white" />
+                  <span>Verify & Confirm Booking ✓</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       )}
