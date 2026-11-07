@@ -34,7 +34,6 @@ import {
   Settings,
   Edit2,
   Trash2,
-  ChevronDown,
 } from "lucide-react";
 import { RainbowButton } from "@/components/ui/rainbow-button";
 import { KitchenCardSkeleton } from "@/components/ui/skeleton";
@@ -50,13 +49,67 @@ const FLAVOUR_OPTIONS = [
   "Custom / Other",
 ];
 const PRICE_PRESETS = [550, 700, 850, 1000];
-const TIME_SLOTS = [
-  "11:00 AM - 1:00 PM",
-  "2:00 PM - 4:00 PM",
-  "6:00 PM - 7:00 PM",
-  "7:00 PM - 8:00 PM",
-  "8:00 PM - 9:00 PM",
+const HOUR_OPTIONS = [
+  { value: "8:00 AM", label: "8:00 AM (Subah)" },
+  { value: "9:00 AM", label: "9:00 AM (Subah)" },
+  { value: "10:00 AM", label: "10:00 AM (Subah)" },
+  { value: "11:00 AM", label: "11:00 AM (Subah)" },
+  { value: "12:00 PM", label: "12:00 PM (Dopahar)" },
+  { value: "1:00 PM", label: "1:00 PM (Dopahar)" },
+  { value: "2:00 PM", label: "2:00 PM (Dopahar)" },
+  { value: "3:00 PM", label: "3:00 PM (Dopahar)" },
+  { value: "4:00 PM", label: "4:00 PM (Shaam)" },
+  { value: "5:00 PM", label: "5:00 PM (Shaam)" },
+  { value: "6:00 PM", label: "6:00 PM (Shaam)" },
+  { value: "7:00 PM", label: "7:00 PM (Shaam)" },
+  { value: "8:00 PM", label: "8:00 PM (Raat)" },
+  { value: "9:00 PM", label: "9:00 PM (Raat)" },
+  { value: "10:00 PM", label: "10:00 PM (Raat)" },
+  { value: "11:00 PM", label: "11:00 PM (Raat)" },
 ];
+
+const PERIOD_PRESETS: Record<string, { label: string; slots: string[] }> = {
+  subah: {
+    label: "Subah",
+    slots: [
+      "9:00 AM - 10:00 AM",
+      "10:00 AM - 11:00 AM",
+      "11:00 AM - 12:00 PM",
+      "9:00 AM - 12:00 PM",
+    ],
+  },
+  dopahar: {
+    label: "Dopahar",
+    slots: [
+      "12:00 PM - 1:00 PM",
+      "1:00 PM - 2:00 PM",
+      "2:00 PM - 3:00 PM",
+      "3:00 PM - 4:00 PM",
+      "1:00 PM - 3:00 PM",
+      "2:00 PM - 4:00 PM",
+    ],
+  },
+  shaam: {
+    label: "Shaam",
+    slots: [
+      "4:00 PM - 5:00 PM",
+      "5:00 PM - 6:00 PM",
+      "6:00 PM - 7:00 PM",
+      "7:00 PM - 8:00 PM",
+      "5:00 PM - 7:00 PM",
+      "6:00 PM - 8:00 PM",
+    ],
+  },
+  raat: {
+    label: "Raat",
+    slots: [
+      "8:00 PM - 9:00 PM",
+      "9:00 PM - 10:00 PM",
+      "10:00 PM - 11:00 PM",
+      "8:00 PM - 10:00 PM",
+    ],
+  },
+};
 
 const isValidCakeMessage = (msg?: string) => {
   if (!msg) return false;
@@ -111,13 +164,16 @@ export default function BakerPOSPage() {
   const [weight, setWeight] = useState("1 Kg");
   const [flavour, setFlavour] = useState("Chocolate Truffle");
   const [customFlavour, setCustomFlavour] = useState("");
-  const [showFlavourMenu, setShowFlavourMenu] = useState(false);
   const [isEggless, setIsEggless] = useState(true);
   const [totalPrice, setTotalPrice] = useState<number>(700);
   const [customPrice, setCustomPrice] = useState("");
   const [deliveryDate, setDeliveryDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [timeSlot, setTimeSlot] = useState("6:00 PM - 7:00 PM");
   const [customTime, setCustomTime] = useState("");
+  const [showTimePickerModal, setShowTimePickerModal] = useState(false);
+  const [timePickerPeriod, setTimePickerPeriod] = useState<"subah" | "dopahar" | "shaam" | "raat">("shaam");
+  const [rangeFrom, setRangeFrom] = useState("6:00 PM");
+  const [rangeTo, setRangeTo] = useState("7:00 PM");
 
   // Settings Modal State
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -276,7 +332,6 @@ export default function BakerPOSPage() {
     setTotalPrice(price);
     setCustomPrice(price.toString());
     setCustomFlavour("");
-    setShowFlavourMenu(false);
     setIsEggless(true);
     setDeliveryDate(new Date().toISOString().split("T")[0]);
     setTimeSlot("6:00 PM - 7:00 PM");
@@ -1028,94 +1083,41 @@ export default function BakerPOSPage() {
                         </div>
                       </div>
 
-                      {/* Weight Selector (Segmented 4-Pill Row - 1 Tap!) */}
-                      <div>
-                        <label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block mb-1">
-                          Weight
-                        </label>
-                        <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-zinc-200/70">
-                          {WEIGHT_OPTIONS.map((w) => (
-                            <button
-                              key={w}
-                              type="button"
-                              onClick={() => handleWeightChange(w)}
-                              className={`py-1.5 rounded-lg text-xs font-bold transition-all text-center ${
-                                weight === w
-                                  ? "bg-white text-zinc-950 shadow-xs"
-                                  : "text-zinc-600 hover:text-zinc-950"
-                              }`}
-                            >
-                              {w}
-                            </button>
-                          ))}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="col-span-1">
+                          <label className="text-[10px] text-zinc-400 font-medium block mb-1">
+                            Weight
+                          </label>
+                          <select
+                            value={weight}
+                            onChange={(e) => handleWeightChange(e.target.value)}
+                            className="w-full px-3 py-2.5 rounded-xl bg-white text-zinc-950 font-bold text-xs focus:outline-none border border-zinc-200/60"
+                          >
+                            {WEIGHT_OPTIONS.map((w) => (
+                              <option key={w} value={w}>
+                                {w}
+                              </option>
+                            ))}
+                          </select>
                         </div>
-                      </div>
 
-                      {/* Flavour Selector (Clean In-App Dropdown) */}
-                      <div className="relative">
-                        <label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block mb-1">
-                          Flavour
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setShowFlavourMenu(!showFlavourMenu)}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-white text-zinc-950 font-bold text-xs flex items-center justify-between border border-zinc-200/70 shadow-2xs hover:bg-zinc-50 transition-colors"
-                        >
-                          <span className="truncate">{flavour}</span>
-                          <ChevronDown
-                            className={`w-3.5 h-3.5 text-zinc-400 shrink-0 transition-transform ${
-                              showFlavourMenu ? "rotate-180" : ""
-                            }`}
-                          />
-                        </button>
-
-                        {showFlavourMenu && (
-                          <>
-                            <div
-                              className="fixed inset-0 z-40"
-                              onClick={() => setShowFlavourMenu(false)}
-                            />
-                            <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white rounded-2xl border border-zinc-200 shadow-xl max-h-52 overflow-y-auto p-1.5 space-y-0.5 animate-in fade-in zoom-in-95 duration-150">
-                              {menuItems.map((f) => (
-                                <button
-                                  key={f.id}
-                                  type="button"
-                                  onClick={() => {
-                                    handleFlavourChange(f.name);
-                                    setShowFlavourMenu(false);
-                                  }}
-                                  className={`w-full px-3 py-2 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition-colors ${
-                                    flavour === f.name
-                                      ? "bg-zinc-100 text-zinc-950"
-                                      : "text-zinc-700 hover:bg-zinc-50"
-                                  }`}
-                                >
-                                  <span>{f.name}</span>
-                                  {flavour === f.name && (
-                                    <Check className="w-3.5 h-3.5 text-zinc-950" />
-                                  )}
-                                </button>
-                              ))}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  handleFlavourChange("Custom / Other");
-                                  setShowFlavourMenu(false);
-                                }}
-                                className={`w-full px-3 py-2 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition-colors border-t border-zinc-100 ${
-                                  flavour === "Custom / Other"
-                                    ? "bg-zinc-100 text-zinc-950"
-                                    : "text-zinc-500 hover:bg-zinc-50"
-                                }`}
-                              >
-                                <span>+ Custom / Other Flavour</span>
-                                {flavour === "Custom / Other" && (
-                                  <Check className="w-3.5 h-3.5 text-zinc-950" />
-                                )}
-                              </button>
-                            </div>
-                          </>
-                        )}
+                        <div className="col-span-2">
+                          <label className="text-[10px] text-zinc-400 font-medium block mb-1">
+                            Flavour
+                          </label>
+                          <select
+                            value={flavour}
+                            onChange={(e) => handleFlavourChange(e.target.value)}
+                            className="w-full px-3 py-2.5 rounded-xl bg-white text-zinc-950 font-bold text-xs focus:outline-none border border-zinc-200/60"
+                          >
+                            {menuItems.map((f) => (
+                              <option key={f.id} value={f.name}>
+                                {f.name}
+                              </option>
+                            ))}
+                            <option value="Custom / Other">Custom / Other</option>
+                          </select>
+                        </div>
                       </div>
 
                       {flavour === "Custom / Other" && (
@@ -1174,9 +1176,9 @@ export default function BakerPOSPage() {
                                 key={label}
                                 type="button"
                                 onClick={() => setDeliveryDate(dStr)}
-                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
                                   isSel
-                                    ? "bg-zinc-950 text-white shadow-2xs"
+                                    ? "bg-zinc-950 text-white"
                                     : "bg-white text-zinc-600 hover:text-zinc-950"
                                 }`}
                               >
@@ -1187,55 +1189,22 @@ export default function BakerPOSPage() {
                         </div>
                       </div>
 
-                      {/* Date & Time Row */}
                       <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-[10px] text-zinc-400 font-medium block mb-1">
-                            Date
-                          </label>
-                          <input
-                            type="date"
-                            value={deliveryDate}
-                            min={new Date().toISOString().split("T")[0]}
-                            onChange={(e) => setDeliveryDate(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl bg-white text-xs font-semibold text-zinc-950 focus:outline-none border border-zinc-200/70"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-[10px] text-zinc-400 font-medium block mb-1">
-                            Ready Time (Any Time)
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              placeholder="e.g. 7:00 PM, 4:30 PM..."
-                              value={timeSlot}
-                              onChange={(e) => setTimeSlot(e.target.value)}
-                              className="w-full pl-7 pr-3 py-2 rounded-xl bg-white text-xs font-semibold text-zinc-950 focus:outline-none border border-zinc-200/70"
-                            />
-                            <Clock className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Quick Time Preset Pills (1-Tap Shortcut) */}
-                      <div className="flex items-center gap-1.5 overflow-x-auto pt-0.5 scrollbar-none">
-                        <span className="text-[10px] text-zinc-400 font-medium shrink-0">Quick:</span>
-                        {["1:00 PM", "4:00 PM", "6:00 PM", "7:00 PM", "8:00 PM", "9:00 PM"].map((t) => (
-                          <button
-                            key={t}
-                            type="button"
-                            onClick={() => setTimeSlot(t)}
-                            className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold transition-all shrink-0 ${
-                              timeSlot === t
-                                ? "bg-zinc-950 text-white shadow-2xs"
-                                : "bg-white text-zinc-600 hover:text-zinc-950 border border-zinc-200/60"
-                            }`}
-                          >
-                            {t}
-                          </button>
-                        ))}
+                        <input
+                          type="date"
+                          value={deliveryDate}
+                          min={new Date().toISOString().split("T")[0]}
+                          onChange={(e) => setDeliveryDate(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl bg-white text-xs font-semibold text-zinc-950 focus:outline-none border border-zinc-200/60"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowTimePickerModal(true)}
+                          className="w-full px-3 py-2 rounded-xl bg-white text-xs font-semibold text-zinc-950 border border-zinc-200/60 flex items-center justify-between hover:bg-zinc-50 active:scale-95 transition-all text-left shadow-2xs"
+                        >
+                          <span className="truncate">{timeSlot}</span>
+                          <Clock className="w-3.5 h-3.5 text-zinc-400 shrink-0 ml-1" />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1956,6 +1925,143 @@ export default function BakerPOSPage() {
             {/* Bottom Tip Bar */}
             <div className="text-center text-[11px] text-zinc-400 font-medium shrink-0">
               Tap image to toggle zoom • Use + / - to inspect piping & details
+            </div>
+          </div>
+        )}
+
+        {/* =======================================================================
+            TIME RANGE PICKER MODAL (ZERO BROKEN DROPDOWN, ZERO AM/PM CONFUSION)
+            ======================================================================= */}
+        {showTimePickerModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-4 space-y-3.5 shadow-2xl relative animate-in slide-in-from-bottom duration-300 ease-out sm:slide-in-from-bottom-0 sm:zoom-in-95">
+              <div className="w-10 h-1 bg-zinc-200 rounded-full mx-auto mb-1 sm:hidden shrink-0" />
+
+              {/* Header */}
+              <div className="flex items-center justify-between pb-1 border-b border-zinc-100">
+                <div>
+                  <h3 className="text-sm font-bold text-zinc-950 flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-zinc-700" />
+                    Ready Time (Kitne baje ke beech?)
+                  </h3>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">
+                    Subah, Dopahar, Shaam ya Raat ka time chuno
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowTimePickerModal(false)}
+                  className="w-7 h-7 rounded-full bg-zinc-100 hover:bg-zinc-200 text-zinc-500 flex items-center justify-center text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* 4 Period Tabs (Subah, Dopahar, Shaam, Raat) */}
+              <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-zinc-100 text-[11px] font-semibold">
+                {[
+                  { id: "subah", label: "🌅 Subah" },
+                  { id: "dopahar", label: "☀️ Dopahar" },
+                  { id: "shaam", label: "🌆 Shaam" },
+                  { id: "raat", label: "🌙 Raat" },
+                ].map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setTimePickerPeriod(p.id as any)}
+                    className={`py-1.5 rounded-lg transition-all ${
+                      timePickerPeriod === p.id
+                        ? "bg-white text-zinc-950 shadow-xs"
+                        : "text-zinc-500 hover:text-zinc-950"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* 1-Tap Quick Slots for the Selected Period */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                  {PERIOD_PRESETS[timePickerPeriod].label} ke Slots (1-Tap Selection)
+                </span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {PERIOD_PRESETS[timePickerPeriod].slots.map((slot) => {
+                    const isSelected = timeSlot === slot;
+                    return (
+                      <button
+                        key={slot}
+                        type="button"
+                        onClick={() => {
+                          setTimeSlot(slot);
+                          setShowTimePickerModal(false);
+                        }}
+                        className={`py-2 px-2.5 rounded-xl text-left text-xs font-semibold border transition-all flex items-center justify-between ${
+                          isSelected
+                            ? "bg-zinc-950 text-white border-zinc-950 shadow-xs"
+                            : "bg-zinc-50 text-zinc-800 border-zinc-200/70 hover:bg-zinc-100 active:scale-95"
+                        }`}
+                      >
+                        <span className="truncate">{slot}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Custom Range: Kitne se Kitne ke beech (Any hours without minutes!) */}
+              <div className="pt-2 border-t border-zinc-100 space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                  Ya Custom Range Chuno (Kitne se Kitne tak)
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-zinc-500 font-medium block mb-1">
+                      Start Time (Se)
+                    </label>
+                    <select
+                      value={rangeFrom}
+                      onChange={(e) => setRangeFrom(e.target.value)}
+                      className="w-full px-2.5 py-2 rounded-xl bg-zinc-50 border border-zinc-200/80 text-xs font-semibold text-zinc-950 focus:outline-none"
+                    >
+                      {HOUR_OPTIONS.map((h) => (
+                        <option key={h.value} value={h.value}>
+                          {h.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-zinc-500 font-medium block mb-1">
+                      End Time (Tak)
+                    </label>
+                    <select
+                      value={rangeTo}
+                      onChange={(e) => setRangeTo(e.target.value)}
+                      className="w-full px-2.5 py-2 rounded-xl bg-zinc-50 border border-zinc-200/80 text-xs font-semibold text-zinc-950 focus:outline-none"
+                    >
+                      {HOUR_OPTIONS.map((h) => (
+                        <option key={h.value} value={h.value}>
+                          {h.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const customSlot = `${rangeFrom} - ${rangeTo}`;
+                    setTimeSlot(customSlot);
+                    setShowTimePickerModal(false);
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-xs"
+                >
+                  <span>Set Time: {rangeFrom} - {rangeTo}</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
