@@ -441,58 +441,68 @@ export default function BakerPOSPage() {
                 );
               }
 
-              // 2. COMPACT COLLAPSED VIEW FOR WAITING ORDERS (PENDING TOKEN)
+              // 2. COMPACT VIEW FOR WAITING ORDERS (PENDING TOKEN)
               if (ord.status === "pending_token") {
                 return (
                   <div
                     key={ord.id}
-                    className="p-3.5 rounded-2xl bg-[#f4f4f5] border border-zinc-200/50 flex items-center justify-between gap-3 transition-transform active:scale-[0.99]"
+                    className="p-4 rounded-2xl bg-[#f4f4f5] border border-zinc-200/60 space-y-3 transition-transform active:scale-[0.99]"
                   >
-                    <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between pb-2 border-b border-zinc-200/60 text-xs">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-xs font-bold text-zinc-900 bg-white px-2 py-0.5 rounded-md border border-zinc-200/60 shadow-2xs">
+                        <span className="font-mono font-bold bg-white text-zinc-900 px-2 py-0.5 rounded-md border border-zinc-200 shadow-2xs">
                           #{ord.order_number}
                         </span>
-                        <span className="text-sm font-bold text-zinc-950 truncate">
-                          {ord.weight} {ord.flavour}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-zinc-500 mt-1">
-                        <span>{getFriendlyDateHeader(ord.delivery_date)}</span>
-                        <span>•</span>
-                        <span>{ord.time_slot}</span>
-                        <span>•</span>
-                        <span className="font-semibold text-zinc-900">Total ₹{ord.total_price}</span>
-                        <span>•</span>
-                        <span className="text-amber-800 font-semibold bg-amber-50 px-1.5 py-0.5 rounded text-[10px]">
+                        <span className="font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md text-[11px]">
                           ₹{ord.token_amount} token pending
                         </span>
                       </div>
+                      <span className="font-bold text-zinc-900">
+                        {getFriendlyDateHeader(ord.delivery_date)} • {ord.time_slot}
+                      </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleCopyLink(ord.order_number)}
-                        className="p-2 rounded-xl bg-white hover:bg-zinc-100 text-zinc-600 transition-colors border border-zinc-200/60"
-                        title="Copy Link"
-                      >
-                        {copiedLink ? (
-                          <Check className="w-4 h-4 text-emerald-600" />
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleSendViaWhatsApp(ord)}
-                        className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-colors active:scale-95 flex items-center gap-1.5 text-xs font-semibold shadow-2xs"
-                      >
-                        <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24">
-                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                        </svg>
-                        <span>Send</span>
-                      </button>
+                    <div className="space-y-1">
+                      <div className="text-sm font-bold text-zinc-950">
+                        {ord.weight} {ord.flavour}
+                      </div>
+                      <div className="text-xs text-zinc-500">
+                        Customer:{" "}
+                        <span className="font-bold text-zinc-900">
+                          {ord.customer_name || "Name not entered"}
+                        </span>
+                        {ord.customer_phone && <span className="font-mono text-zinc-700"> • +{ord.customer_phone}</span>}
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-zinc-200/60 flex items-center justify-between gap-2">
+                      <div className="text-xs font-bold text-zinc-900">
+                        Total: ₹{ord.total_price}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyLink(ord.order_number)}
+                          className="px-3 py-2 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 text-xs font-semibold border border-zinc-200 transition-colors flex items-center gap-1.5"
+                        >
+                          {copiedLink ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                          <span>{copiedLink ? "Copied" : "Copy"}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSendViaWhatsApp(ord)}
+                          className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs"
+                        >
+                          <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                          </svg>
+                          <span>Send Link</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -502,77 +512,79 @@ export default function BakerPOSPage() {
               return (
                 <div
                   key={ord.id}
-                  className="p-4 rounded-3xl bg-[#f4f4f5] border border-zinc-200/50 space-y-3 transition-all"
+                  className="p-4 sm:p-5 rounded-3xl bg-[#f4f4f5] border border-zinc-200/70 space-y-3.5 transition-all shadow-xs"
                 >
-                  {/* Row 1: Header (Order #, Fulfilment Pill, Ready Time Badge) */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-xs font-bold text-zinc-900 bg-white px-2 py-0.5 rounded-md border border-zinc-200/60 shadow-2xs">
+                  {/* Row 1: Header (Order #, Fulfilment Tag & Ready Time) */}
+                  <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-zinc-200/60">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-extrabold text-zinc-950 bg-white px-2.5 py-1 rounded-lg border border-zinc-200/80 shadow-2xs">
                         #{ord.order_number}
                       </span>
-                      <span className="text-[11px] font-semibold text-zinc-600">
+                      <span className="text-xs font-bold text-zinc-700 bg-white/90 px-2 py-1 rounded-lg border border-zinc-200/60">
                         {ord.fulfilment_type === "delivery" ? "🛵 Delivery" : "🏬 Pickup"}
                       </span>
                     </div>
 
-                    {/* Time Pill - Crisp & Prominent */}
-                    <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white text-zinc-900 text-xs font-bold border border-zinc-200/70 shadow-2xs">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white text-zinc-900 text-xs font-bold border border-zinc-200/80 shadow-2xs shrink-0">
                       <Clock className="w-3.5 h-3.5 text-zinc-500" />
-                      <span>{getFriendlyDateHeader(ord.delivery_date)}, {ord.time_slot}</span>
+                      <span>{getFriendlyDateHeader(ord.delivery_date)} • {ord.time_slot}</span>
                     </div>
                   </div>
 
-                  {/* Row 2: Cake Title & Diet Tag */}
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-base font-bold text-zinc-950 truncate">
-                      {ord.weight} {ord.flavour}
-                    </h3>
-                    <span
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${
-                        ord.is_eggless
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-amber-100 text-amber-800"
-                      }`}
-                    >
-                      {ord.is_eggless ? "Eggless" : "With Egg"}
-                    </span>
-                  </div>
-
-                  {/* Row 3: Piped Message (High Contrast & Clear, Only If Exists) */}
-                  {isValidCakeMessage(ord.cake_message) && (
-                    <div className="px-3 py-2 rounded-xl bg-white border border-zinc-200/70 text-xs flex items-center gap-2">
-                      <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider shrink-0">
-                        Piping:
-                      </span>
-                      <span className="font-bold text-zinc-950 break-words">
-                        "{ord.cake_message}"
+                  {/* Row 2: Cake Specification & Diet Badge */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="text-base sm:text-lg font-extrabold text-zinc-950 leading-snug">
+                        {ord.weight} {ord.flavour}
+                      </h3>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider shrink-0 ${
+                          ord.is_eggless
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-amber-100 text-amber-800"
+                        }`}
+                      >
+                        {ord.is_eggless ? "Eggless" : "With Egg"}
                       </span>
                     </div>
-                  )}
 
-                  {/* Row 4: Customer Details & 1-Tap Contact Action */}
-                  {(ord.customer_name || ord.customer_phone || ord.delivery_address) && (
-                    <div className="text-xs pt-1.5 border-t border-zinc-200/60 flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1 space-y-0.5">
-                        <div className="font-semibold text-zinc-950">
-                          {ord.customer_name || "Customer"}
-                        </div>
-                        {ord.delivery_address && ord.fulfilment_type === "delivery" && (
-                          <p className="text-[11px] text-zinc-500 break-words">
-                            Address: {ord.delivery_address}
-                          </p>
-                        )}
+                    {/* Piping Message (Clear Callout, Only If Present) */}
+                    {isValidCakeMessage(ord.cake_message) && (
+                      <div className="px-3 py-2 rounded-xl bg-white border border-zinc-200/80 text-xs flex items-start gap-2 shadow-2xs">
+                        <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider shrink-0 mt-0.5">
+                          Piping:
+                        </span>
+                        <span className="font-bold text-zinc-950 break-words italic">
+                          "{ord.cake_message}"
+                        </span>
                       </div>
+                    )}
+                  </div>
 
-                      {/* Quick Contact Buttons (Call & WhatsApp) */}
-                      {ord.customer_phone && (
+                  {/* Row 3: Customer Details - Plain, Unboxed, Zero Cognitive Load */}
+                  <div className="pt-2 border-t border-zinc-200/60 space-y-1.5 text-xs">
+                    <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">
+                      Customer Details
+                    </span>
+
+                    {/* Customer Full Name */}
+                    <div className="text-sm font-bold text-zinc-950">
+                      {ord.customer_name || "Name not provided"}
+                    </div>
+
+                    {/* Customer Mobile Phone (Always visible digits + 1-Tap Call & WhatsApp) */}
+                    {ord.customer_phone ? (
+                      <div className="flex items-center justify-between gap-2 pt-0.5">
+                        <span className="font-mono text-xs font-bold text-zinc-800 select-all">
+                          +{ord.customer_phone}
+                        </span>
                         <div className="flex items-center gap-1.5 shrink-0">
                           <a
                             href={`tel:${ord.customer_phone}`}
-                            className="p-1.5 rounded-lg bg-white hover:bg-zinc-100 border border-zinc-200/60 text-zinc-700 transition-colors"
-                            title="Call Customer"
+                            className="px-2.5 py-1 rounded-lg bg-white hover:bg-zinc-100 border border-zinc-200/80 text-zinc-900 text-xs font-bold flex items-center gap-1 transition-colors shadow-2xs"
                           >
-                            <Phone className="w-3.5 h-3.5" />
+                            <Phone className="w-3 h-3 text-zinc-600" />
+                            <span>Call</span>
                           </a>
                           <button
                             type="button"
@@ -580,52 +592,69 @@ export default function BakerPOSPage() {
                               const text = `Hi ${ord.customer_name || ""}! Regarding your cake order #${ord.order_number} from ${baker.name}...`;
                               window.open(buildWhatsAppLink(ord.customer_phone!, text), "_blank");
                             }}
-                            className="p-1.5 rounded-lg bg-white hover:bg-emerald-50 border border-zinc-200/60 text-emerald-600 transition-colors"
-                            title="WhatsApp Customer"
+                            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1 transition-colors shadow-2xs"
                           >
-                            <svg className="w-3.5 h-3.5 fill-emerald-600" viewBox="0 0 24 24">
+                            <svg className="w-3 h-3 fill-white" viewBox="0 0 24 24">
                               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                             </svg>
+                            <span>WhatsApp</span>
                           </button>
                         </div>
-                      )}
-                    </div>
-                  )}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-zinc-400 italic">No phone number</div>
+                    )}
 
-                  {/* Row 5: Reference Photos & Addons (if present) */}
+                    {/* Address */}
+                    {ord.fulfilment_type === "delivery" ? (
+                      <div className="pt-0.5 text-xs text-zinc-700 leading-relaxed break-words">
+                        <span className="font-bold text-zinc-900">Address: </span>
+                        <span>{ord.delivery_address || "Delivery address pending"}</span>
+                      </div>
+                    ) : (
+                      <div className="pt-0.5 text-xs text-zinc-500">
+                        <span className="font-semibold text-zinc-700">Fulfilment: </span>
+                        <span>Self Pickup by Customer</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Row 4: Reference Design Photos & Addons (if present) */}
                   {(((ord.reference_images && ord.reference_images.length > 0) || ord.reference_image) || (ord.addons && ord.addons.length > 0)) && (
-                    <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none pt-0.5">
-                      {(ord.reference_images || (ord.reference_image ? [ord.reference_image] : [])).map((img, i) => (
-                        <div
-                          key={i}
-                          onClick={() => setEnlargedImage(img)}
-                          className="cursor-pointer relative w-12 h-12 rounded-xl overflow-hidden bg-white shrink-0 border border-zinc-200/60 group"
-                        >
-                          <img
-                            src={img}
-                            alt="Ref"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                          />
-                        </div>
-                      ))}
-                      {ord.addons?.map((a, i) => (
-                        <span
-                          key={i}
-                          className="px-2 py-1 rounded-lg bg-white text-zinc-800 text-[10px] font-semibold border border-zinc-200/60 shrink-0"
-                        >
-                          +{a.name}
-                        </span>
-                      ))}
+                    <div className="pt-2 border-t border-zinc-200/60 space-y-2">
+                      <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none">
+                        {(ord.reference_images || (ord.reference_image ? [ord.reference_image] : [])).map((img, i) => (
+                          <div
+                            key={i}
+                            onClick={() => setEnlargedImage(img)}
+                            className="cursor-pointer relative w-12 h-12 rounded-xl overflow-hidden bg-white shrink-0 border border-zinc-200/80 group shadow-2xs"
+                          >
+                            <img
+                              src={img}
+                              alt="Customer Design Reference"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            />
+                          </div>
+                        ))}
+                        {ord.addons?.map((a, i) => (
+                          <span
+                            key={i}
+                            className="px-2.5 py-1.5 rounded-lg bg-white text-zinc-800 text-[11px] font-semibold border border-zinc-200/80 shrink-0 shadow-2xs"
+                          >
+                            +{a.name}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
 
-                  {/* Row 6: Bottom Action Bar */}
-                  <div className="pt-2.5 border-t border-zinc-200/60 flex items-center justify-between gap-3">
+                  {/* Row 5: Bottom Action Bar: Thumb-friendly on Mobile */}
+                  <div className="pt-3 border-t border-zinc-200/60 flex items-center justify-between gap-3">
                     <div>
-                      <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold block">
+                      <span className="text-[10px] text-zinc-400 uppercase tracking-wider font-extrabold block">
                         To Collect
                       </span>
-                      <span className="text-base font-bold text-zinc-950">
+                      <span className="text-base sm:text-lg font-black text-zinc-950">
                         ₹{ord.balance_amount}
                       </span>
                     </div>
@@ -635,7 +664,7 @@ export default function BakerPOSPage() {
                         <button
                           type="button"
                           onClick={() => updateOrderStatus(ord.id, "baked")}
-                          className="px-4 py-2 rounded-xl bg-zinc-950 hover:bg-zinc-800 active:scale-95 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+                          className="px-4 py-2.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 active:scale-95 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
                         >
                           <span>Mark as Baked</span>
                           <Check className="w-3.5 h-3.5 stroke-[3]" />
@@ -646,9 +675,9 @@ export default function BakerPOSPage() {
                         <button
                           type="button"
                           onClick={() => updateOrderStatus(ord.id, "completed")}
-                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+                          className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
                         >
-                          <span>Collected & Paid</span>
+                          <span>Handover & Paid</span>
                           <Check className="w-3.5 h-3.5 stroke-[3]" />
                         </button>
                       )}
