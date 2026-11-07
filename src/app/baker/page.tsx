@@ -946,22 +946,38 @@ export default function BakerPOSPage() {
                 <>
                   <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3.5 text-xs">
                     {/* CARD 1: THE CAKE SPEC */}
-                    <div className="p-3.5 rounded-2xl bg-[#f4f4f5] space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                          Cake Specification
+                    <div className="p-3.5 rounded-2xl bg-[#f4f4f5] space-y-3">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
+                          Dietary Preference
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => setIsEggless(!isEggless)}
-                          className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
-                            isEggless
-                              ? "bg-emerald-100 text-emerald-800"
-                              : "bg-amber-100 text-amber-900"
-                          }`}
-                        >
-                          {isEggless ? "100% Eggless ✓" : "With Egg"}
-                        </button>
+                        <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-zinc-200/70">
+                          <button
+                            type="button"
+                            onClick={() => setIsEggless(true)}
+                            className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                              isEggless
+                                ? "bg-white text-emerald-800 shadow-xs ring-1 ring-emerald-600/30"
+                                : "text-zinc-600 hover:text-zinc-950"
+                            }`}
+                          >
+                            <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0"></span>
+                            <span>100% Eggless</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setIsEggless(false)}
+                            className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                              !isEggless
+                                ? "bg-white text-amber-900 shadow-xs ring-1 ring-amber-600/30"
+                                : "text-zinc-600 hover:text-zinc-950"
+                            }`}
+                          >
+                            <span className="w-2 h-2 rounded-full bg-amber-600 shrink-0"></span>
+                            <span>Contains Egg</span>
+                          </button>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-3 gap-2">
