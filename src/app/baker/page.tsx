@@ -36,6 +36,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { RainbowButton } from "@/components/ui/rainbow-button";
+import { MovingBorderButton } from "@/components/ui/moving-border";
 import { KitchenCardSkeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 
@@ -67,49 +68,6 @@ const HOUR_OPTIONS = [
   { value: "10:00 PM", label: "10:00 PM (Raat)" },
   { value: "11:00 PM", label: "11:00 PM (Raat)" },
 ];
-
-const PERIOD_PRESETS: Record<string, { label: string; slots: string[] }> = {
-  subah: {
-    label: "Subah",
-    slots: [
-      "9:00 AM - 10:00 AM",
-      "10:00 AM - 11:00 AM",
-      "11:00 AM - 12:00 PM",
-      "9:00 AM - 12:00 PM",
-    ],
-  },
-  dopahar: {
-    label: "Dopahar",
-    slots: [
-      "12:00 PM - 1:00 PM",
-      "1:00 PM - 2:00 PM",
-      "2:00 PM - 3:00 PM",
-      "3:00 PM - 4:00 PM",
-      "1:00 PM - 3:00 PM",
-      "2:00 PM - 4:00 PM",
-    ],
-  },
-  shaam: {
-    label: "Shaam",
-    slots: [
-      "4:00 PM - 5:00 PM",
-      "5:00 PM - 6:00 PM",
-      "6:00 PM - 7:00 PM",
-      "7:00 PM - 8:00 PM",
-      "5:00 PM - 7:00 PM",
-      "6:00 PM - 8:00 PM",
-    ],
-  },
-  raat: {
-    label: "Raat",
-    slots: [
-      "8:00 PM - 9:00 PM",
-      "9:00 PM - 10:00 PM",
-      "10:00 PM - 11:00 PM",
-      "8:00 PM - 10:00 PM",
-    ],
-  },
-};
 
 const isValidCakeMessage = (msg?: string) => {
   if (!msg) return false;
@@ -170,8 +128,6 @@ export default function BakerPOSPage() {
   const [deliveryDate, setDeliveryDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [timeSlot, setTimeSlot] = useState("6:00 PM - 7:00 PM");
   const [customTime, setCustomTime] = useState("");
-  const [showTimePickerModal, setShowTimePickerModal] = useState(false);
-  const [timePickerPeriod, setTimePickerPeriod] = useState<"subah" | "dopahar" | "shaam" | "raat">("shaam");
   const [rangeFrom, setRangeFrom] = useState("6:00 PM");
   const [rangeTo, setRangeTo] = useState("7:00 PM");
 
@@ -950,13 +906,13 @@ export default function BakerPOSPage() {
 
                     <div className="flex-1 max-w-[200px] flex justify-end">
                       {ord.status === "confirmed" && (
-                        <button
+                        <MovingBorderButton
                           onClick={() => updateOrderStatus(ord.id, "baked")}
-                          className="w-full h-10 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow-xs"
+                          containerClassName="w-full h-10"
+                          className="bg-zinc-950 text-white font-semibold text-xs hover:bg-zinc-900"
                         >
-                          <span>Mark as Baked</span>
-                          <span>✓</span>
-                        </button>
+                          <span>Mark as Baked ✓</span>
+                        </MovingBorderButton>
                       )}
 
                       {ord.status === "baked" && (
@@ -1189,22 +1145,97 @@ export default function BakerPOSPage() {
                         </div>
                       </div>
 
+                      {/* Date & Time Range Row */}
                       <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="date"
-                          value={deliveryDate}
-                          min={new Date().toISOString().split("T")[0]}
-                          onChange={(e) => setDeliveryDate(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl bg-white text-xs font-semibold text-zinc-950 focus:outline-none border border-zinc-200/60"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowTimePickerModal(true)}
-                          className="w-full px-3 py-2 rounded-xl bg-white text-xs font-semibold text-zinc-950 border border-zinc-200/60 flex items-center justify-between hover:bg-zinc-50 active:scale-95 transition-all text-left shadow-2xs"
-                        >
-                          <span className="truncate">{timeSlot}</span>
-                          <Clock className="w-3.5 h-3.5 text-zinc-400 shrink-0 ml-1" />
-                        </button>
+                        {/* 1. Date Input */}
+                        <div>
+                          <label className="text-[10px] text-zinc-500 font-medium block mb-1">
+                            Date
+                          </label>
+                          <input
+                            type="date"
+                            value={deliveryDate}
+                            min={new Date().toISOString().split("T")[0]}
+                            onChange={(e) => setDeliveryDate(e.target.value)}
+                            className="w-full px-3 py-2 rounded-xl bg-white text-xs font-semibold text-zinc-950 focus:outline-none border border-zinc-200/60"
+                          />
+                        </div>
+
+                        {/* 2. Inline Time Range (Se ... Tak) */}
+                        <div>
+                          <label className="text-[10px] text-zinc-500 font-medium block mb-1">
+                            Time (Kitne se kitne baje)
+                          </label>
+                          <div className="flex items-center gap-1 bg-white px-2 py-1.5 rounded-xl border border-zinc-200/60">
+                            <select
+                              value={rangeFrom}
+                              onChange={(e) => {
+                                const newFrom = e.target.value;
+                                setRangeFrom(newFrom);
+                                setTimeSlot(`${newFrom} - ${rangeTo}`);
+                              }}
+                              className="bg-transparent text-xs font-bold text-zinc-950 focus:outline-none flex-1 truncate"
+                            >
+                              {HOUR_OPTIONS.map((h) => (
+                                <option key={h.value} value={h.value}>
+                                  {h.label}
+                                </option>
+                              ))}
+                            </select>
+                            <span className="text-zinc-400 text-[10px] font-bold px-0.5">to</span>
+                            <select
+                              value={rangeTo}
+                              onChange={(e) => {
+                                const newTo = e.target.value;
+                                setRangeTo(newTo);
+                                setTimeSlot(`${rangeFrom} - ${newTo}`);
+                              }}
+                              className="bg-transparent text-xs font-bold text-zinc-950 focus:outline-none flex-1 truncate"
+                            >
+                              {HOUR_OPTIONS.map((h) => (
+                                <option key={h.value} value={h.value}>
+                                  {h.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 1-Tap Quick Hours (Zero Cognitive Load) */}
+                      <div className="flex items-center gap-1.5 pt-0.5 overflow-x-auto scrollbar-none">
+                        <span className="text-[10px] text-zinc-400 font-semibold shrink-0">
+                          Quick:
+                        </span>
+                        {[
+                          { label: "5 - 6 PM", from: "5:00 PM", to: "6:00 PM" },
+                          { label: "6 - 7 PM", from: "6:00 PM", to: "7:00 PM" },
+                          { label: "7 - 8 PM", from: "7:00 PM", to: "8:00 PM" },
+                          { label: "8 - 9 PM", from: "8:00 PM", to: "9:00 PM" },
+                          { label: "2 - 4 PM", from: "2:00 PM", to: "4:00 PM" },
+                          { label: "11 AM - 1 PM", from: "11:00 AM", to: "1:00 PM" },
+                        ].map((q) => {
+                          const slotStr = `${q.from} - ${q.to}`;
+                          const isSel = timeSlot === slotStr;
+                          return (
+                            <button
+                              key={q.label}
+                              type="button"
+                              onClick={() => {
+                                setRangeFrom(q.from);
+                                setRangeTo(q.to);
+                                setTimeSlot(slotStr);
+                              }}
+                              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold shrink-0 transition-all ${
+                                isSel
+                                  ? "bg-zinc-950 text-white shadow-2xs"
+                                  : "bg-white text-zinc-600 hover:text-zinc-950 border border-zinc-200/60"
+                              }`}
+                            >
+                              {q.label}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -1925,143 +1956,6 @@ export default function BakerPOSPage() {
             {/* Bottom Tip Bar */}
             <div className="text-center text-[11px] text-zinc-400 font-medium shrink-0">
               Tap image to toggle zoom • Use + / - to inspect piping & details
-            </div>
-          </div>
-        )}
-
-        {/* =======================================================================
-            TIME RANGE PICKER MODAL (ZERO BROKEN DROPDOWN, ZERO AM/PM CONFUSION)
-            ======================================================================= */}
-        {showTimePickerModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-            <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-4 space-y-3.5 shadow-2xl relative animate-in slide-in-from-bottom duration-300 ease-out sm:slide-in-from-bottom-0 sm:zoom-in-95">
-              <div className="w-10 h-1 bg-zinc-200 rounded-full mx-auto mb-1 sm:hidden shrink-0" />
-
-              {/* Header */}
-              <div className="flex items-center justify-between pb-1 border-b border-zinc-100">
-                <div>
-                  <h3 className="text-sm font-bold text-zinc-950 flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-zinc-700" />
-                    Ready Time (Kitne baje ke beech?)
-                  </h3>
-                  <p className="text-[11px] text-zinc-400 mt-0.5">
-                    Subah, Dopahar, Shaam ya Raat ka time chuno
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowTimePickerModal(false)}
-                  className="w-7 h-7 rounded-full bg-zinc-100 hover:bg-zinc-200 text-zinc-500 flex items-center justify-center text-xs"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* 4 Period Tabs (Subah, Dopahar, Shaam, Raat) */}
-              <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-zinc-100 text-[11px] font-semibold">
-                {[
-                  { id: "subah", label: "🌅 Subah" },
-                  { id: "dopahar", label: "☀️ Dopahar" },
-                  { id: "shaam", label: "🌆 Shaam" },
-                  { id: "raat", label: "🌙 Raat" },
-                ].map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setTimePickerPeriod(p.id as any)}
-                    className={`py-1.5 rounded-lg transition-all ${
-                      timePickerPeriod === p.id
-                        ? "bg-white text-zinc-950 shadow-xs"
-                        : "text-zinc-500 hover:text-zinc-950"
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* 1-Tap Quick Slots for the Selected Period */}
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                  {PERIOD_PRESETS[timePickerPeriod].label} ke Slots (1-Tap Selection)
-                </span>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {PERIOD_PRESETS[timePickerPeriod].slots.map((slot) => {
-                    const isSelected = timeSlot === slot;
-                    return (
-                      <button
-                        key={slot}
-                        type="button"
-                        onClick={() => {
-                          setTimeSlot(slot);
-                          setShowTimePickerModal(false);
-                        }}
-                        className={`py-2 px-2.5 rounded-xl text-left text-xs font-semibold border transition-all flex items-center justify-between ${
-                          isSelected
-                            ? "bg-zinc-950 text-white border-zinc-950 shadow-xs"
-                            : "bg-zinc-50 text-zinc-800 border-zinc-200/70 hover:bg-zinc-100 active:scale-95"
-                        }`}
-                      >
-                        <span className="truncate">{slot}</span>
-                        {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Custom Range: Kitne se Kitne ke beech (Any hours without minutes!) */}
-              <div className="pt-2 border-t border-zinc-100 space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                  Ya Custom Range Chuno (Kitne se Kitne tak)
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] text-zinc-500 font-medium block mb-1">
-                      Start Time (Se)
-                    </label>
-                    <select
-                      value={rangeFrom}
-                      onChange={(e) => setRangeFrom(e.target.value)}
-                      className="w-full px-2.5 py-2 rounded-xl bg-zinc-50 border border-zinc-200/80 text-xs font-semibold text-zinc-950 focus:outline-none"
-                    >
-                      {HOUR_OPTIONS.map((h) => (
-                        <option key={h.value} value={h.value}>
-                          {h.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-zinc-500 font-medium block mb-1">
-                      End Time (Tak)
-                    </label>
-                    <select
-                      value={rangeTo}
-                      onChange={(e) => setRangeTo(e.target.value)}
-                      className="w-full px-2.5 py-2 rounded-xl bg-zinc-50 border border-zinc-200/80 text-xs font-semibold text-zinc-950 focus:outline-none"
-                    >
-                      {HOUR_OPTIONS.map((h) => (
-                        <option key={h.value} value={h.value}>
-                          {h.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    const customSlot = `${rangeFrom} - ${rangeTo}`;
-                    setTimeSlot(customSlot);
-                    setShowTimePickerModal(false);
-                  }}
-                  className="w-full py-2.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-xs"
-                >
-                  <span>Set Time: {rangeFrom} - {rangeTo}</span>
-                </button>
-              </div>
             </div>
           </div>
         )}
