@@ -909,7 +909,7 @@ export default function BakerPOSPage() {
                         <MovingBorderButton
                           onClick={() => updateOrderStatus(ord.id, "baked")}
                           containerClassName="w-full h-10"
-                          className="bg-zinc-950 text-white font-semibold text-xs hover:bg-zinc-900"
+                          className="bg-white text-zinc-950 font-bold text-xs hover:bg-zinc-50 border border-zinc-200/80 shadow-2xs"
                         >
                           <span>Mark as Baked ✓</span>
                         </MovingBorderButton>
