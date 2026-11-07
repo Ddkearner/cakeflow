@@ -126,7 +126,21 @@ export const STORAGE_KEYS = {
   BAKERS: "cakeflow_bakers_v1",
   ORDERS: "cakeflow_orders_v1",
   ACTIVE_BAKER_TOKEN: "cakeflow_active_baker_token",
+  ACTIVE_BAKER_SLUG: "cakeflow_active_baker_slug",
 };
+
+export function getActiveBakerSlug(): string {
+  if (typeof window === "undefined") return "sugarbloom";
+  return localStorage.getItem(STORAGE_KEYS.ACTIVE_BAKER_SLUG) || "sugarbloom";
+}
+
+export function setActiveBakerSlug(slug: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(
+    STORAGE_KEYS.ACTIVE_BAKER_SLUG,
+    slug.toLowerCase().trim()
+  );
+}
 
 export const CAKEFLOW_EVENTS = {
   ORDERS_UPDATED: "cakeflow_orders_updated",

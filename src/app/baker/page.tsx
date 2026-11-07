@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import { Baker, Order, FlavourItem, AddonItem } from "@/lib/types";
 import {
   getLocalBakers,
@@ -10,6 +11,8 @@ import {
   saveLocalBaker,
   deleteLocalOrder,
   fetchRemoteOrdersByBaker,
+  getActiveBakerSlug,
+  setActiveBakerSlug,
   DEFAULT_FLAVOURS,
   DEFAULT_ADDONS,
   STORAGE_KEYS,
@@ -35,6 +38,7 @@ import {
   Settings,
   Edit2,
   Trash2,
+  AlertCircle,
 } from "lucide-react";
 import { RainbowButton } from "@/components/ui/rainbow-button";
 import { MovingBorderButton } from "@/components/ui/moving-border";
@@ -93,16 +97,23 @@ const isValidCakeMessage = (msg?: string) => {
 
 export default function BakerPOSPage() {
   const { showToast } = useToast();
+  const params = useParams();
+  const searchParams = useSearchParams();
+
+  // 1. Resolve Baker Slug: [slug] route param -> ?slug= query -> active stored slug -> default 'sugarbloom'
+  const resolvedSlug = (
+    (params?.slug as string) ||
+    searchParams?.get("slug") ||
+    getActiveBakerSlug()
+  ).toLowerCase().trim();
 
   // Synchronous Cache Initialization (Zero Skeleton Flash!)
   const [baker, setBaker] = useState<Baker | null>(() => {
     if (typeof window === "undefined") return null;
     const all = getLocalBakers();
-    const token = localStorage.getItem("cakeflow_active_token");
-    if (token) {
-      const found = getBakerByToken(token);
-      if (found) return found;
-    }
+    const activeSlug = getActiveBakerSlug();
+    const found = all.find((b) => b.slug.toLowerCase() === activeSlug || b.id === activeSlug);
+    if (found) return found;
     return all.length > 0 ? all[0] : null;
   });
 
@@ -110,7 +121,8 @@ export default function BakerPOSPage() {
     if (typeof window === "undefined") return [];
     const all = getLocalOrders();
     const allBakers = getLocalBakers();
-    const current = allBakers[0];
+    const activeSlug = getActiveBakerSlug();
+    const current = allBakers.find((b) => b.slug.toLowerCase() === activeSlug) || allBakers[0];
     return current ? all.filter((o) => o.baker_id === current.id) : all;
   });
 
@@ -242,20 +254,58 @@ export default function BakerPOSPage() {
     if (remote && remote.length > 0) setOrders(remote);
   };
 
-  // 0. Initial Hydration & Smooth Skeleton Transition (Zero blank screen, zero pop-in flash)
+  // 0. Initial Hydration & Multi-Baker Isolation (Binds to specific slug)
   useEffect(() => {
     const all = getLocalOrders();
     const allBakers = getLocalBakers();
-    const current = allBakers[0];
+
+    let current = allBakers.find(
+      (b) =>
+        b.slug.toLowerCase() === resolvedSlug ||
+        b.id.toLowerCase() === resolvedSlug
+    );
+
+    // If new baker slug visited (e.g. /baker/pooja-cakes or ?slug=pooja-cakes), dynamically initialize & isolate
+    if (!current && resolvedSlug && resolvedSlug !== "sugarbloom") {
+      const cleanName = resolvedSlug
+        .split("-")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+
+      current = {
+        id: `baker_${resolvedSlug}`,
+        slug: resolvedSlug,
+        name: `${cleanName} Studio`,
+        tagline: "Freshly Baked Custom Artisan Cakes",
+        phone: "919876543210",
+        upi_id: `${resolvedSlug}@okhdfcbank`,
+        pickup_address: "Shop 1, Main Road, City",
+        google_maps_url: "",
+        secret_token: `${resolvedSlug}_pos_key`,
+        default_token_amount: 100,
+        pin: "1234",
+        max_daily_cakes: 4,
+        menu_items: DEFAULT_FLAVOURS,
+        addon_items: DEFAULT_ADDONS,
+        created_at: new Date().toISOString(),
+      };
+      saveLocalBaker(current);
+    }
+
+    if (!current) {
+      current = allBakers[0];
+    }
+
     if (current) {
       setBaker(current);
+      setActiveBakerSlug(current.slug);
       setOrders(all.filter((o) => o.baker_id === current.id));
     }
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 280);
     return () => clearTimeout(timer);
-  }, []);
+  }, [resolvedSlug]);
 
   const handleMarkAsBaked = (orderId: string) => {
     playBakeSound();
@@ -1110,6 +1160,14 @@ export default function BakerPOSPage() {
                             </button>
                           )}
                         </div>
+
+                        {/* Baker Safety Notice: Match UTR with SMS before baking */}
+                        {ord.utr && (
+                          <div className="text-[10px] text-amber-900 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 flex items-center gap-1 font-medium mt-0.5">
+                            <AlertCircle className="w-2.5 h-2.5 text-amber-600 shrink-0" />
+                            <span>Match UTR in Bank SMS before baking sponge</span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex-1 max-w-[200px] flex justify-end">
@@ -2048,6 +2106,34 @@ export default function BakerPOSPage() {
                 ) : (
                   /* TAB 3: STORE PROFILE */
                   <div className="space-y-3.5">
+                    {/* Permanent POS Link Badge */}
+                    <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200/80 space-y-1">
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">
+                        Your Dedicated Kitchen POS Link
+                      </span>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono text-xs font-semibold text-zinc-800 truncate">
+                          /baker/{baker.slug}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const origin = typeof window !== "undefined" ? window.location.origin : "";
+                            navigator.clipboard.writeText(`${origin}/baker/${baker.slug}`);
+                            playSuccessSound();
+                            showToast("Copied your Kitchen Link! Bookmark it 📌", "success");
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-white hover:bg-zinc-100 border border-zinc-200 text-[10px] font-bold shrink-0 flex items-center gap-1 active:scale-95 transition-transform"
+                        >
+                          <Copy className="w-3 h-3 text-zinc-400" />
+                          <span>Copy POS Link</span>
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-zinc-400">
+                        Bookmark this link on your phone to open your kitchen dashboard anytime.
+                      </p>
+                    </div>
+
                     <div>
                       <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
                         Bakery / Studio Name

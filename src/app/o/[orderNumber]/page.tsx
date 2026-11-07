@@ -199,6 +199,7 @@ export default function CustomerCheckoutPage() {
   // Real UPI Intent Protocol & Automated UTR Verification States
   const [showVerificationSheet, setShowVerificationSheet] = useState(false);
   const [paySheetTab, setPaySheetTab] = useState<"apps" | "qr">("apps");
+  const [showManualUtr, setShowManualUtr] = useState(false);
   const [utrInput, setUtrInput] = useState("");
   const [activeTxnRef, setActiveTxnRef] = useState<string>(
     initialOrder?.transaction_id || ""
@@ -260,7 +261,7 @@ export default function CustomerCheckoutPage() {
     loadOrderData();
   }, [orderNumber]);
 
-  // Handle Image Upload & Compression
+  // Handle Image Upload & High-Efficiency Canvas Compression (Max ~30KB per image)
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -271,28 +272,33 @@ export default function CustomerCheckoutPage() {
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement("canvas");
-          const MAX_WIDTH = 800;
-          const MAX_HEIGHT = 800;
+          // Max dimension 560px: 100% sharp for piping/design reference on mobile, tiny footprint
+          const MAX_SIZE = 560;
           let width = img.width;
           let height = img.height;
 
           if (width > height) {
-            if (width > MAX_WIDTH) {
-              height = Math.round((height * MAX_WIDTH) / width);
-              width = MAX_WIDTH;
+            if (width > MAX_SIZE) {
+              height = Math.round((height * MAX_SIZE) / width);
+              width = MAX_SIZE;
             }
           } else {
-            if (height > MAX_HEIGHT) {
-              width = Math.round((width * MAX_HEIGHT) / height);
-              height = MAX_HEIGHT;
+            if (height > MAX_SIZE) {
+              width = Math.round((width * MAX_SIZE) / height);
+              height = MAX_SIZE;
             }
           }
 
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext("2d");
-          ctx?.drawImage(img, 0, 0, width, height);
-          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.75);
+          if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            ctx.drawImage(img, 0, 0, width, height);
+          }
+          // 0.58 quality JPEG compresses 4MB camera photo down to ~25KB without visual degradation
+          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.58);
           setReferenceImages((prev) => [...prev, compressedBase64].slice(0, 4));
         };
         img.src = event.target?.result as string;
@@ -365,6 +371,7 @@ export default function CustomerCheckoutPage() {
               // If returned after at least 2.5 seconds (customer switched to UPI app)
               if (elapsedSec >= 2.5) {
                 setShowVerificationSheet(true);
+                setShowManualUtr(true); // User returned from paying! Reveal 1-tap UTR verification
                 if (data.txnRef) setActiveTxnRef(data.txnRef);
               }
             }
@@ -1404,66 +1411,83 @@ export default function CustomerCheckoutPage() {
               </div>
             )}
 
-            {/* STEP 2: REAL 12-DIGIT UTR VERIFICATION ENGINE */}
-            <div className="p-3.5 rounded-2xl bg-[#f4f4f5] border border-zinc-200/80 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-zinc-900">
-                  Step 2: Enter 12-digit UTR
-                </span>
+            {/* STEP 2: UTR MANUAL VERIFICATION (ONLY SHOWN IF RETURNED / NOT DETECTED / FAILED) */}
+            {!showManualUtr ? (
+              <div className="pt-2 border-t border-zinc-100 text-center">
                 <button
                   type="button"
-                  onClick={handlePasteClipboard}
-                  className="text-[11px] font-semibold text-zinc-700 hover:text-zinc-950 flex items-center gap-1 bg-white hover:bg-zinc-100 px-2 py-0.5 rounded-md border border-zinc-200/80 transition-colors"
+                  onClick={() => {
+                    playTapSound();
+                    setShowManualUtr(true);
+                  }}
+                  className="text-[11px] text-zinc-500 hover:text-zinc-950 font-medium underline"
                 >
-                  <Copy className="w-3 h-3 text-zinc-400" />
-                  <span>{pastedSuccess ? "Pasted! ✓" : "Paste from Clipboard"}</span>
+                  Payment completed on app but not auto-confirmed? Enter UTR
                 </button>
               </div>
+            ) : (
+              <div className="space-y-3 pt-1 border-t border-zinc-100 animate-in fade-in duration-150">
+                <div className="p-3.5 rounded-2xl bg-[#f4f4f5] border border-zinc-200/80 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-zinc-900">
+                      Step 2: Enter 12-digit UTR
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handlePasteClipboard}
+                      className="text-[11px] font-semibold text-zinc-700 hover:text-zinc-950 flex items-center gap-1 bg-white hover:bg-zinc-100 px-2 py-0.5 rounded-md border border-zinc-200/80 transition-colors"
+                    >
+                      <Copy className="w-3 h-3 text-zinc-400" />
+                      <span>{pastedSuccess ? "Pasted! ✓" : "Paste from Clipboard"}</span>
+                    </button>
+                  </div>
 
-              <div className="relative">
-                <input
-                  type="text"
-                  maxLength={18}
-                  placeholder="e.g. 429104820194"
-                  value={utrInput}
-                  onChange={(e) => {
-                    setUtrInput(e.target.value.replace(/[^0-9A-Za-z]/g, ""));
-                    setUtrError(null);
-                  }}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-zinc-300 text-sm font-mono font-bold tracking-wider text-zinc-950 placeholder-zinc-400 focus:outline-none focus:border-zinc-950 shadow-2xs"
-                />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      maxLength={18}
+                      placeholder="e.g. 429104820194"
+                      value={utrInput}
+                      onChange={(e) => {
+                        setUtrInput(e.target.value.replace(/[^0-9A-Za-z]/g, ""));
+                        setUtrError(null);
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-zinc-300 text-sm font-mono font-bold tracking-wider text-zinc-950 placeholder-zinc-400 focus:outline-none focus:border-zinc-950 shadow-2xs"
+                    />
+                  </div>
+
+                  {utrError && (
+                    <p className="text-[10px] text-red-600 font-medium">
+                      {utrError}
+                    </p>
+                  )}
+
+                  <p className="text-[10px] text-zinc-400 leading-tight">
+                    Found in your GPay / PhonePe / Paytm payment screen under UPI Ref / UTR.
+                  </p>
+                </div>
+
+                {/* Confirm & Verify Button */}
+                <button
+                  type="button"
+                  disabled={isVerifyingUtr}
+                  onClick={handleVerifyUtr}
+                  className="w-full py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 active:scale-[0.99] text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-xs disabled:opacity-50"
+                >
+                  {isVerifyingUtr ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Verifying Token with Bank...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <span>Verify & Confirm Booking ✓</span>
+                    </>
+                  )}
+                </button>
               </div>
-
-              {utrError && (
-                <p className="text-[10px] text-red-600 font-medium">
-                  {utrError}
-                </p>
-              )}
-
-              <p className="text-[10px] text-zinc-400 leading-tight">
-                Copied automatically from your GPay / PhonePe payment success screen.
-              </p>
-            </div>
-
-            {/* Confirm & Verify Button */}
-            <button
-              type="button"
-              disabled={isVerifyingUtr}
-              onClick={handleVerifyUtr}
-              className="w-full py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 active:scale-[0.99] text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-xs disabled:opacity-50"
-            >
-              {isVerifyingUtr ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Verifying Token with Bank...</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>Verify & Confirm Booking ✓</span>
-                </>
-              )}
-            </button>
+            )}
           </div>
         </div>
       )}
