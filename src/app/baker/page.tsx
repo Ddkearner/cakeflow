@@ -128,6 +128,7 @@ export default function BakerPOSPage() {
   const [enlargedKitchenImage, setEnlargedKitchenImage] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [expandedWaitingOrderId, setExpandedWaitingOrderId] = useState<string | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
 
   // Quick Order Preset Fields
   const [weight, setWeight] = useState("1 Kg");
@@ -592,12 +593,19 @@ export default function BakerPOSPage() {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  const handleDeleteOrder = (orderId: string) => {
+  const handleDeleteOrder = (order: Order) => {
     playTapSound();
-    if (!confirm("Are you sure you want to delete this unpaid order link?")) return;
-    setOrders((prev) => prev.filter((o) => o.id !== orderId));
-    deleteLocalOrder(orderId);
+    setOrderToDelete(order);
+  };
+
+  const confirmDeleteOrder = () => {
+    if (!orderToDelete) return;
+    playTapSound();
+    const targetId = orderToDelete.id;
+    setOrders((prev) => prev.filter((o) => o.id !== targetId));
+    deleteLocalOrder(targetId);
     showToast("Order Link Deleted ✓", "info");
+    setOrderToDelete(null);
     setExpandedWaitingOrderId(null);
   };
 
@@ -881,7 +889,7 @@ export default function BakerPOSPage() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteOrder(ord.id);
+                            handleDeleteOrder(ord);
                           }}
                           className="w-full py-2.5 px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-98 border border-red-200/60"
                         >
@@ -2085,6 +2093,54 @@ export default function BakerPOSPage() {
             <div className="text-center text-[11px] text-zinc-400 font-medium shrink-0">
               Tap image to toggle zoom • Use + / - to inspect piping & details
             </div>
+          </div>
+        )}
+
+        {/* =======================================================================
+            CUSTOM IN-APP CONFIRM DELETE MODAL (ZERO NATIVE POPUP ALERT)
+            ======================================================================= */}
+        {orderToDelete && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              transition={{ type: "spring", damping: 25, stiffness: 350 }}
+              className="bg-white rounded-3xl p-5 max-w-xs w-full text-center space-y-4 shadow-2xl relative border border-zinc-100"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto shadow-xs">
+                <Trash2 className="w-6 h-6" />
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-zinc-950">
+                  Delete Order Link?
+                </h3>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  #{orderToDelete.order_number} ({orderToDelete.weight} {orderToDelete.flavour}) will be permanently deleted.
+                </p>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <button
+                  type="button"
+                  onClick={confirmDeleteOrder}
+                  className="w-full py-3 rounded-2xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-all active:scale-98 shadow-xs cursor-pointer"
+                >
+                  Yes, Delete Order
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playTapSound();
+                    setOrderToDelete(null);
+                  }}
+                  className="w-full py-2.5 rounded-2xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-semibold text-xs transition-all active:scale-98 cursor-pointer"
+                >
+                  Keep Order
+                </button>
+              </div>
+            </motion.div>
           </div>
         )}
     </div>
