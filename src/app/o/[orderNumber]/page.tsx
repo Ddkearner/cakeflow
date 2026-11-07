@@ -282,19 +282,14 @@ export default function CustomerCheckoutPage() {
           TOP BAR (MINIMALIST BRANDING) - ONLY ON CHECKOUT FORM
           ======================================================================= */}
       {!isPaid && (
-        <header className="px-5 pt-4 pb-3 border-b border-zinc-100 bg-white sticky top-0 z-20 print:hidden flex items-center justify-between">
-          <div className="min-w-0 pr-2">
-            <div className="flex items-center gap-1.5">
-              <h1 className="text-sm font-bold text-zinc-950 tracking-tight truncate">
-                {baker.name}
-              </h1>
-              <span className="w-3.5 h-3.5 rounded-full bg-zinc-950 text-white flex items-center justify-center text-[8px] font-bold shrink-0">
-                ✓
-              </span>
-            </div>
-            <p className="text-[11px] text-zinc-400 truncate mt-0.5">
-              {baker.pickup_address}
-            </p>
+        <header className="px-5 pt-3.5 pb-2.5 border-b border-zinc-100 bg-white sticky top-0 z-20 print:hidden flex items-center justify-between">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <h1 className="text-sm font-bold text-zinc-950 tracking-tight truncate">
+              {baker.name}
+            </h1>
+            <span className="w-3.5 h-3.5 rounded-full bg-zinc-950 text-white flex items-center justify-center text-[8px] font-bold shrink-0">
+              ✓
+            </span>
           </div>
 
           <span className="px-2.5 py-1 rounded-full bg-[#f4f4f5] text-[11px] font-semibold text-zinc-700 shrink-0 font-mono">
@@ -548,10 +543,10 @@ export default function CustomerCheckoutPage() {
               </div>
             </div>
 
-            {/* CARD 2: BOOKING DETAILS (SEAMLESS SINGLE CONTAINER) */}
-            <div className="p-4 rounded-3xl bg-[#f4f4f5] space-y-3.5">
+            {/* CARD 2: BOOKING DETAILS (ZERO COGNITIVE LOAD) */}
+            <div className="p-4 rounded-3xl bg-[#f4f4f5] space-y-3">
               {/* Handover Toggle: Pickup vs Delivery */}
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-zinc-200/70">
                   <button
                     type="button"
@@ -578,32 +573,31 @@ export default function CustomerCheckoutPage() {
                 </div>
 
                 {fulfilmentType === "pickup" ? (
-                  <p className="text-[11px] text-zinc-500 px-1 truncate">
-                    Pickup from: {baker.pickup_address}
-                  </p>
+                  <div className="px-1 text-xs text-zinc-600 flex items-start gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-zinc-400 shrink-0 mt-0.5" />
+                    <span className="leading-snug">{baker.pickup_address}</span>
+                  </div>
                 ) : (
                   <input
                     type="text"
                     placeholder="Enter complete delivery address"
                     value={deliveryAddress}
                     onChange={(e) => setDeliveryAddress(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white text-zinc-950 text-xs placeholder-zinc-400 focus:outline-none font-medium mt-1"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white text-zinc-950 text-xs placeholder-zinc-400 focus:outline-none border border-transparent focus:border-zinc-300 font-medium"
                   />
                 )}
               </div>
 
-              {/* Customer Contact */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
+              {/* Grouped Customer Info Block (Single unified container) */}
+              <div className="rounded-2xl border border-zinc-200/80 bg-white overflow-hidden">
+                <div className="grid grid-cols-2 divide-x divide-zinc-100">
                   <input
                     type="text"
                     placeholder="Your Name"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white text-zinc-950 text-xs placeholder-zinc-400 focus:outline-none font-medium"
+                    className="w-full px-3.5 py-2.5 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none font-medium bg-transparent"
                   />
-                </div>
-                <div>
                   <input
                     type="tel"
                     maxLength={10}
@@ -612,25 +606,23 @@ export default function CustomerCheckoutPage() {
                     onChange={(e) =>
                       setCustomerPhone(e.target.value.replace(/\D/g, ""))
                     }
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white text-zinc-950 text-xs placeholder-zinc-400 focus:outline-none font-medium"
+                    className="w-full px-3.5 py-2.5 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none font-medium bg-transparent font-mono"
+                  />
+                </div>
+                <div className="border-t border-zinc-100">
+                  <input
+                    type="text"
+                    maxLength={40}
+                    placeholder="Text on cake (e.g. Happy Birthday Rohan) — optional"
+                    value={cakeMessage}
+                    onChange={(e) => setCakeMessage(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-xs text-zinc-950 placeholder-zinc-400 focus:outline-none font-medium bg-transparent"
                   />
                 </div>
               </div>
 
-              {/* Message on Cake */}
-              <div>
-                <input
-                  type="text"
-                  maxLength={40}
-                  placeholder="Text on cake (e.g. Happy Birthday Rohan) — optional"
-                  value={cakeMessage}
-                  onChange={(e) => setCakeMessage(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white text-zinc-950 text-xs placeholder-zinc-400 focus:outline-none font-medium"
-                />
-              </div>
-
-              {/* Design Reference Upload (Discreet & Compact) */}
-              <div>
+              {/* Extras Row: Photo Reference & Party Items as Clean Dual Chips */}
+              <div className="flex items-center gap-2 pt-0.5">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -640,107 +632,120 @@ export default function CustomerCheckoutPage() {
                   onChange={handleImageChange}
                 />
 
-                {referenceImages.length > 0 ? (
-                  <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none">
-                    {referenceImages.map((imgUrl, idx) => (
-                      <div
-                        key={idx}
-                        className="relative w-14 h-14 rounded-xl overflow-hidden bg-white shrink-0 border border-zinc-200/60"
-                      >
-                        <img
-                          src={imgUrl}
-                          alt={`Ref ${idx + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeReferenceImage(idx)}
-                          className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/75 text-white flex items-center justify-center text-[9px]"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                    {referenceImages.length < 4 && (
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-14 h-14 rounded-xl bg-white border border-dashed border-zinc-300 flex flex-col items-center justify-center text-zinc-400 hover:text-zinc-900 shrink-0"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span className="text-[8px] font-medium">Add</span>
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full py-2.5 px-3 rounded-xl bg-white hover:bg-zinc-100/80 flex items-center justify-center gap-2 text-xs font-medium text-zinc-600 transition-colors"
-                  >
-                    <Camera className="w-3.5 h-3.5 text-zinc-400" />
-                    <span>Attach reference photo (optional)</span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`flex-1 py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                    referenceImages.length > 0
+                      ? "bg-zinc-950 text-white border-zinc-950"
+                      : "bg-white text-zinc-700 border-zinc-200/80 hover:bg-zinc-50"
+                  }`}
+                >
+                  <Camera className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">
+                    {referenceImages.length > 0
+                      ? `${referenceImages.length} Photo Added`
+                      : "Reference Photo"}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAddonsSection(!showAddonsSection)}
+                  className={`flex-1 py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                    selectedAddons.length > 0 || showAddonsSection
+                      ? "bg-zinc-950 text-white border-zinc-950"
+                      : "bg-white text-zinc-700 border-zinc-200/80 hover:bg-zinc-50"
+                  }`}
+                >
+                  <Plus className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">
+                    {selectedAddons.length > 0
+                      ? `${selectedAddons.length} Added`
+                      : "Party Items"}
+                  </span>
+                </button>
               </div>
 
-              {/* Party Addons (Discreet Accordion) */}
-              <div className="pt-1">
-                {!showAddonsSection && selectedAddons.length === 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowAddonsSection(true)}
-                    className="w-full py-2 px-3 rounded-xl bg-white hover:bg-zinc-100/80 flex items-center justify-between text-xs text-zinc-600 font-medium transition-colors"
-                  >
-                    <span>Party items (candles, sparklers...)</span>
-                    <span className="text-[11px] font-semibold text-zinc-900">+ Add</span>
-                  </button>
-                ) : (
-                  <div className="space-y-2 pt-1 border-t border-zinc-200/60">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-zinc-800">
-                        Party Add-ons
-                      </span>
+              {/* Reference Images Thumbnails (if uploaded) */}
+              {referenceImages.length > 0 && (
+                <div className="flex items-center gap-2 overflow-x-auto pt-1 pb-0.5 scrollbar-none">
+                  {referenceImages.map((imgUrl, idx) => (
+                    <div
+                      key={idx}
+                      className="relative w-14 h-14 rounded-xl overflow-hidden bg-white shrink-0 border border-zinc-200/80"
+                    >
+                      <img
+                        src={imgUrl}
+                        alt={`Ref ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
                       <button
                         type="button"
-                        onClick={() => setShowAddonsSection(false)}
-                        className="text-[11px] text-zinc-400 hover:text-zinc-600 font-medium"
+                        onClick={() => removeReferenceImage(idx)}
+                        className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/80 text-white flex items-center justify-center text-[9px]"
                       >
-                        {selectedAddons.length > 0
-                          ? `(${selectedAddons.length} added)`
-                          : "Hide"}
+                        ✕
                       </button>
                     </div>
+                  ))}
+                  {referenceImages.length < 4 && (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-14 h-14 rounded-xl bg-white border border-dashed border-zinc-300 flex flex-col items-center justify-center text-zinc-400 hover:text-zinc-900 shrink-0"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span className="text-[8px] font-medium">Add</span>
+                    </button>
+                  )}
+                </div>
+              )}
 
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {availableAddons.map((item) => {
-                        const isSelected = selectedAddons.some((a) => a.id === item.id);
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => toggleAddon(item)}
-                            className={`p-2 rounded-xl text-left text-xs transition-all flex items-center justify-between ${
-                              isSelected
-                                ? "bg-zinc-950 text-white font-medium"
-                                : "bg-white text-zinc-700 hover:bg-zinc-100"
+              {/* Party Addons Section (Expands smoothly on demand) */}
+              {showAddonsSection && (
+                <div className="space-y-2 pt-2 border-t border-zinc-200/60 animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-zinc-800">
+                      Party Items & Accessories
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddonsSection(false)}
+                      className="text-[11px] text-zinc-400 hover:text-zinc-600 font-medium"
+                    >
+                      Close
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {availableAddons.map((item) => {
+                      const isSelected = selectedAddons.some((a) => a.id === item.id);
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => toggleAddon(item)}
+                          className={`p-2 rounded-xl text-left text-xs transition-all flex items-center justify-between ${
+                            isSelected
+                              ? "bg-zinc-950 text-white font-medium"
+                              : "bg-white text-zinc-700 hover:bg-zinc-100"
+                          }`}
+                        >
+                          <span className="truncate pr-1">{item.name}</span>
+                          <span
+                            className={`text-[10px] shrink-0 font-semibold ${
+                              isSelected ? "text-zinc-300" : "text-zinc-400"
                             }`}
                           >
-                            <span className="truncate pr-1">{item.name}</span>
-                            <span
-                              className={`text-[10px] shrink-0 font-semibold ${
-                                isSelected ? "text-zinc-300" : "text-zinc-400"
-                              }`}
-                            >
-                              +₹{item.price}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                            +₹{item.price}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         )}
