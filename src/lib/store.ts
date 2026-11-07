@@ -177,6 +177,13 @@ export function saveLocalBaker(baker: Baker): void {
   syncBakerToCloud(baker).catch(() => {});
 }
 
+export function deleteLocalBaker(bakerId: string): void {
+  if (typeof window === "undefined") return;
+  const bakers = getLocalBakers().filter((b) => b.id !== bakerId);
+  localStorage.setItem(STORAGE_KEYS.BAKERS, JSON.stringify(bakers));
+  supabase.from("bakers").delete().eq("id", bakerId).then(() => {}, () => {});
+}
+
 export function getLocalOrders(): Order[] {
   if (typeof window === "undefined") return SEED_ORDERS;
   try {
