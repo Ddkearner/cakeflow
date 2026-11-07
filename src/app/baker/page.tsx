@@ -11,6 +11,8 @@ import {
   fetchRemoteOrdersByBaker,
   DEFAULT_FLAVOURS,
   DEFAULT_ADDONS,
+  STORAGE_KEYS,
+  CAKEFLOW_EVENTS,
 } from "@/lib/store";
 import {
   generateOrderNumber,
@@ -193,40 +195,51 @@ export default function BakerPOSPage() {
     if (remote && remote.length > 0) setOrders(remote);
   };
 
-  // 1. AUTO REFRESH: Poll every 3 seconds + Storage listener (cross-tab sync) + Window focus listener
+  // 1. INSTANT REACTIVE SYNC: In-memory Event Bus (0ms) + Storage match + Non-destructive background sync
   useEffect(() => {
     if (!baker) return;
 
-    const syncOrders = async () => {
+    // A. Local State Loader
+    const loadCurrentOrders = () => {
       const all = getLocalOrders();
-      const bakerOrders = all.filter((o) => o.baker_id === baker.id);
-      setOrders(bakerOrders);
+      setOrders(all.filter((o) => o.baker_id === baker.id));
+    };
 
-      // Cloud Sync from Supabase
+    // B. In-Memory Reactive Event Bus (0ms instant intra-app update)
+    const handleOrdersUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent<{ orders?: Order[] }>;
+      if (customEvent.detail?.orders) {
+        setOrders(customEvent.detail.orders.filter((o) => o.baker_id === baker.id));
+      } else {
+        loadCurrentOrders();
+      }
+    };
+    window.addEventListener(CAKEFLOW_EVENTS.ORDERS_UPDATED, handleOrdersUpdated);
+
+    // C. Cross-tab Storage Listener (Fires when another tab writes to cakeflow_orders_v1)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEYS.ORDERS || !e.key) {
+        loadCurrentOrders();
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+
+    // D. Non-destructive background sync on focus and gentle 10s interval
+    const syncCloud = async () => {
       const remote = await fetchRemoteOrdersByBaker(baker.id);
       if (remote && remote.length > 0) {
         setOrders(remote);
       }
     };
 
-    const pollInterval = setInterval(syncOrders, 3000);
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "cakeflow_orders" || !e.key) {
-        syncOrders();
-      }
-    };
-    window.addEventListener("storage", handleStorageChange);
-
-    const handleFocus = () => {
-      syncOrders();
-    };
-    window.addEventListener("focus", handleFocus);
+    window.addEventListener("focus", syncCloud);
+    const backgroundInterval = setInterval(syncCloud, 10000);
 
     return () => {
-      clearInterval(pollInterval);
+      window.removeEventListener(CAKEFLOW_EVENTS.ORDERS_UPDATED, handleOrdersUpdated);
       window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("focus", syncCloud);
+      clearInterval(backgroundInterval);
     };
   }, [baker]);
 
@@ -453,18 +466,26 @@ export default function BakerPOSPage() {
       created_at: new Date().toISOString(),
     };
 
-    saveLocalOrder(newOrder);
+    // 1. Instant 0ms Optimistic React State Update
+    setOrders((prev) => [newOrder, ...prev]);
     setCreatedOrder(newOrder);
-    refreshOrders(baker.id);
+
+    // 2. Persist to storage & cloud
+    saveLocalOrder(newOrder);
   };
 
   const updateOrderStatus = (orderId: string, newStatus: Order["status"]) => {
+    // 1. Instant 0ms Optimistic State Update
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+    );
+
+    // 2. Persist locally & background sync to cloud
     const all = getLocalOrders();
     const target = all.find((o) => o.id === orderId);
     if (target) {
       target.status = newStatus;
       saveLocalOrder(target);
-      if (baker) refreshOrders(baker.id);
     }
   };
 
@@ -848,13 +869,13 @@ export default function BakerPOSPage() {
 
                     <div className="flex-1 max-w-[200px] flex justify-end">
                       {ord.status === "confirmed" && (
-                        <MovingBorderButton
+                        <button
                           onClick={() => updateOrderStatus(ord.id, "baked")}
-                          containerClassName="w-full h-10"
-                          className="bg-white text-zinc-950 font-bold text-xs hover:bg-zinc-50"
+                          className="w-full h-10 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow-xs"
                         >
-                          Mark as Baked ✓
-                        </MovingBorderButton>
+                          <span>Mark as Baked</span>
+                          <span>✓</span>
+                        </button>
                       )}
 
                       {ord.status === "baked" && (

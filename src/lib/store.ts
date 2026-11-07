@@ -122,11 +122,34 @@ export const SEED_ORDERS: Order[] = [
   },
 ];
 
-const STORAGE_KEYS = {
+export const STORAGE_KEYS = {
   BAKERS: "cakeflow_bakers_v1",
   ORDERS: "cakeflow_orders_v1",
   ACTIVE_BAKER_TOKEN: "cakeflow_active_baker_token",
 };
+
+export const CAKEFLOW_EVENTS = {
+  ORDERS_UPDATED: "cakeflow_orders_updated",
+  BAKERS_UPDATED: "cakeflow_bakers_updated",
+};
+
+export function notifyOrdersUpdated(updatedOrders?: Order[]): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent(CAKEFLOW_EVENTS.ORDERS_UPDATED, {
+      detail: { orders: updatedOrders },
+    })
+  );
+}
+
+export function notifyBakersUpdated(updatedBakers?: Baker[]): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent(CAKEFLOW_EVENTS.BAKERS_UPDATED, {
+      detail: { bakers: updatedBakers },
+    })
+  );
+}
 
 // ============================================================================
 // LOCAL STORAGE METHODS (INSTANT 0MS CLIENT FEEDBACK)
@@ -172,6 +195,7 @@ export function saveLocalBaker(baker: Baker): void {
     bakers.unshift(baker);
   }
   localStorage.setItem(STORAGE_KEYS.BAKERS, JSON.stringify(bakers));
+  notifyBakersUpdated(bakers);
 
   // Background Cloud Sync to Supabase
   syncBakerToCloud(baker).catch(() => {});
@@ -181,6 +205,7 @@ export function deleteLocalBaker(bakerId: string): void {
   if (typeof window === "undefined") return;
   const bakers = getLocalBakers().filter((b) => b.id !== bakerId);
   localStorage.setItem(STORAGE_KEYS.BAKERS, JSON.stringify(bakers));
+  notifyBakersUpdated(bakers);
   supabase.from("bakers").delete().eq("id", bakerId).then(() => {}, () => {});
 }
 
@@ -210,6 +235,7 @@ export function saveLocalOrder(order: Order): void {
     orders.unshift(order);
   }
   localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+  notifyOrdersUpdated(orders);
 
   // Background Cloud Sync to Supabase
   syncOrderToCloud(order).catch(() => {});
@@ -393,9 +419,61 @@ export async function fetchRemoteOrdersByBaker(bakerId: string): Promise<Order[]
       created_at: d.created_at,
     }));
 
-    // Merge with local storage
+    // Smart Non-destructive Reconciliation with local storage
     if (typeof window !== "undefined" && orders.length > 0) {
-      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+      const local = getLocalOrders();
+      const localMap = new Map<string, Order>();
+      local.forEach((o) => localMap.set(o.id, o));
+
+      let hasNewChanges = false;
+      const statusPrecedence: Record<Order["status"], number> = {
+        pending_token: 1,
+        confirmed: 2,
+        baked: 3,
+        completed: 4,
+        cancelled: 5,
+      };
+
+      orders.forEach((remoteOrder) => {
+        const existing = localMap.get(remoteOrder.id);
+        if (!existing) {
+          localMap.set(remoteOrder.id, remoteOrder);
+          hasNewChanges = true;
+        } else {
+          // If remote status is strictly more advanced (e.g. customer paid online: pending_token -> confirmed)
+          if (
+            statusPrecedence[remoteOrder.status] >
+            statusPrecedence[existing.status]
+          ) {
+            localMap.set(remoteOrder.id, { ...existing, ...remoteOrder });
+            hasNewChanges = true;
+          } else if (
+            statusPrecedence[existing.status] >
+            statusPrecedence[remoteOrder.status]
+          ) {
+            // Local is ahead (e.g. baker clicked baked/completed before cloud sync caught up)
+            // Re-sync local status to cloud in background
+            syncOrderToCloud(existing).catch(() => {});
+          } else {
+            // Same status: update any newly attached fields (e.g. customer name/phone/address)
+            if (
+              remoteOrder.customer_name !== existing.customer_name ||
+              remoteOrder.customer_phone !== existing.customer_phone ||
+              remoteOrder.delivery_address !== existing.delivery_address
+            ) {
+              localMap.set(remoteOrder.id, { ...existing, ...remoteOrder });
+              hasNewChanges = true;
+            }
+          }
+        }
+      });
+
+      const mergedList = Array.from(localMap.values());
+      if (hasNewChanges) {
+        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(mergedList));
+        notifyOrdersUpdated(mergedList);
+      }
+      return mergedList.filter((o) => o.baker_id === bakerId);
     }
 
     return orders;

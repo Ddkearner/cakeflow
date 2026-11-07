@@ -7,6 +7,8 @@ import {
   saveLocalBaker,
   deleteLocalBaker,
   getLocalOrders,
+  STORAGE_KEYS,
+  CAKEFLOW_EVENTS,
 } from "@/lib/store";
 import { generateSecretToken } from "@/lib/utils";
 import {
@@ -66,6 +68,26 @@ export default function AdminPage() {
   useEffect(() => {
     if (isAuthenticated) {
       refreshData();
+
+      const handleUpdate = () => refreshData();
+      window.addEventListener(CAKEFLOW_EVENTS.ORDERS_UPDATED, handleUpdate);
+      window.addEventListener(CAKEFLOW_EVENTS.BAKERS_UPDATED, handleUpdate);
+      const handleStorage = (e: StorageEvent) => {
+        if (
+          e.key === STORAGE_KEYS.ORDERS ||
+          e.key === STORAGE_KEYS.BAKERS ||
+          !e.key
+        ) {
+          refreshData();
+        }
+      };
+      window.addEventListener("storage", handleStorage);
+
+      return () => {
+        window.removeEventListener(CAKEFLOW_EVENTS.ORDERS_UPDATED, handleUpdate);
+        window.removeEventListener(CAKEFLOW_EVENTS.BAKERS_UPDATED, handleUpdate);
+        window.removeEventListener("storage", handleStorage);
+      };
     }
   }, [isAuthenticated]);
 
