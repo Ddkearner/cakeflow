@@ -56,7 +56,7 @@ export interface Order {
   utr?: string;
   paid_at?: string;
   payment_method?: string;
-  status: 'pending_token' | 'confirmed' | 'baked' | 'completed' | 'cancelled';
+  status: 'pending_token' | 'payment_claimed' | 'confirmed' | 'baked' | 'completed' | 'cancelled';
   created_at: string;
 }
 

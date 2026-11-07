@@ -20,8 +20,10 @@ import { useToast } from "@/components/ui/toast";
 import { RainbowButton } from "@/components/ui/rainbow-button";
 import { generateReceiptPdf } from "@/lib/pdf-generator";
 import { playTapSound, playSuccessSound, triggerHaptic } from "@/lib/sounds";
+import { supabase } from "@/lib/supabase";
 import {
   Check,
+  Clock,
   MapPin,
   Copy,
   ShieldCheck,
@@ -245,7 +247,8 @@ export default function CustomerCheckoutPage() {
         if (
           found.status === "confirmed" ||
           found.status === "baked" ||
-          found.status === "completed"
+          found.status === "completed" ||
+          found.status === "payment_claimed"
         ) {
           setIsPaid(true);
         }
@@ -393,13 +396,51 @@ export default function CustomerCheckoutPage() {
     };
   }, [order, isPaid]);
 
+  // Realtime Cloud Listener: When baker accepts payment in their POS, auto-confirm customer UI!
+  useEffect(() => {
+    if (!order?.id) return;
+
+    const channel = supabase
+      .channel(`customer_order_${order.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+        },
+        (payload) => {
+          if (payload.new) {
+            const updated = payload.new as Order;
+            if (updated.id === order.id || updated.order_number === order.order_number) {
+              setOrder((prev) => (prev ? { ...prev, ...updated } : updated));
+              if (
+                updated.status === "confirmed" ||
+                updated.status === "baked" ||
+                updated.status === "completed"
+              ) {
+                setIsPaid(true);
+                playSuccessSound();
+                showToast("Payment Verified by Baker! Slot Confirmed 🎉", "success");
+              }
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [order?.id, order?.order_number]);
+
   // =========================================================================
   // 3. PAYMENT COMPLETION & VERIFICATION ENGINE
   // =========================================================================
   const completeOrderPayment = (utrValue: string, method = "upi_intent") => {
     if (!order) return;
 
-    playSuccessSound();
+    playTapSound();
     triggerHaptic(30);
 
     const updatedOrder: Order = {
@@ -415,8 +456,8 @@ export default function CustomerCheckoutPage() {
       fulfilment_type: fulfilmentType,
       delivery_address:
         fulfilmentType === "delivery" ? deliveryAddress.trim() : undefined,
-      status: "confirmed",
-      utr: utrValue.trim(),
+      status: "payment_claimed",
+      utr: utrValue.trim() || undefined,
       transaction_id:
         activeTxnRef ||
         order.transaction_id ||
@@ -435,7 +476,7 @@ export default function CustomerCheckoutPage() {
       sessionStorage.removeItem("cf_upi_session");
     } catch {}
 
-    showToast("Token Payment Verified! Slot Locked 🎉", "success");
+    showToast("Payment Submitted! Awaiting Baker Verification ⏳", "info");
   };
 
   const handlePayAndConfirm = () => {
@@ -586,7 +627,10 @@ export default function CustomerCheckoutPage() {
     if (!order || !baker) return;
     showToast("Opening WhatsApp...", "info");
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const msg = `Hi ${baker.name}, I have confirmed Order #${order.order_number} (${customerName || "Customer"}) and paid ₹${tokenAmount} token advance.\n\nReceipt: ${origin}/o/${order.order_number}`;
+    const isClaimed = order.status === "payment_claimed";
+    const msg = isClaimed
+      ? `Hi ${baker.name}, I have submitted ₹${tokenAmount} token advance for Order #${order.order_number} (${customerName || "Customer"}). Please check your bank SMS and confirm my booking!\n\nReceipt: ${origin}/o/${order.order_number}`
+      : `Hi ${baker.name}, I have confirmed Order #${order.order_number} (${customerName || "Customer"}) and paid ₹${tokenAmount} token advance.\n\nReceipt: ${origin}/o/${order.order_number}`;
     const waUrl = buildWhatsAppLink(baker.phone, msg);
     window.open(waUrl, "_blank");
   };
@@ -665,21 +709,44 @@ export default function CustomerCheckoutPage() {
           <div className="space-y-4 animate-in fade-in duration-200">
             {/* Celebratory Receipt Header */}
             <div className="flex flex-col items-center text-center pt-2 pb-1 space-y-2 print:hidden">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 flex items-center justify-center">
-                <Check className="w-6 h-6 stroke-[2.5]" />
-              </div>
+              {order.status === "payment_claimed" ? (
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-800 flex items-center justify-center">
+                  <Clock className="w-6 h-6 stroke-[2.5] text-amber-700 animate-pulse" />
+                </div>
+              ) : (
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 flex items-center justify-center">
+                  <Check className="w-6 h-6 stroke-[2.5]" />
+                </div>
+              )}
 
               <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-zinc-100 text-xs font-semibold text-zinc-700">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <span>Order Confirmed • #{order.order_number}</span>
-                </div>
-                <h2 className="text-xl font-bold text-zinc-950 tracking-tight">
-                  Advance Token Paid (₹{order.token_amount})
-                </h2>
-                <p className="text-xs text-zinc-500">
-                  Your cake slot is reserved with <span className="font-semibold text-zinc-900">{baker.name}</span>
-                </p>
+                {order.status === "payment_claimed" ? (
+                  <>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-50 border border-amber-200/60 text-xs font-semibold text-amber-900">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                      <span>Verification Pending • #{order.order_number}</span>
+                    </div>
+                    <h2 className="text-xl font-bold text-zinc-950 tracking-tight">
+                      Payment Submitted (₹{order.token_amount})
+                    </h2>
+                    <p className="text-xs text-zinc-500 max-w-xs mx-auto">
+                      <span className="font-semibold text-zinc-900">{baker.name}</span> is verifying your ₹{order.token_amount} advance in their bank SMS. This page updates automatically!
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-zinc-100 text-xs font-semibold text-zinc-700">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span>Order Confirmed • #{order.order_number}</span>
+                    </div>
+                    <h2 className="text-xl font-bold text-zinc-950 tracking-tight">
+                      Booking Advance Confirmed (₹{order.token_amount})
+                    </h2>
+                    <p className="text-xs text-zinc-500">
+                      Your cake slot is reserved with <span className="font-semibold text-zinc-900">{baker.name}</span>
+                    </p>
+                  </>
+                )}
               </div>
             </div>
 
@@ -692,9 +759,16 @@ export default function CustomerCheckoutPage() {
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[11px] font-mono text-zinc-500">
                   <span>Order #{order.order_number}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold text-[10px]">
-                    Token Paid ✓
-                  </span>
+                  {order.status === "payment_claimed" ? (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-semibold text-[10px] flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      Verification in Progress
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold text-[10px]">
+                      Token Paid ✓
+                    </span>
+                  )}
                 </div>
                 <h3 className="text-lg font-bold text-zinc-950 leading-snug">
                   {order.weight} {order.flavour}
@@ -823,10 +897,14 @@ export default function CustomerCheckoutPage() {
                   <span>Total Order Value</span>
                   <span className="font-semibold text-zinc-800 font-mono">₹{order.total_price}</span>
                 </div>
-                <div className="flex items-center justify-between text-emerald-800 font-medium">
+                <div className={`flex items-center justify-between font-medium ${order.status === "payment_claimed" ? "text-amber-900" : "text-emerald-800"}`}>
                   <span className="flex items-center gap-1">
-                    <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Advance Token Paid (UPI)</span>
+                    {order.status === "payment_claimed" ? (
+                      <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                    ) : (
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    )}
+                    <span>{order.status === "payment_claimed" ? "Advance Token Submitted (Verifying)" : "Advance Token Paid (UPI)"}</span>
                   </span>
                   <span className="font-bold font-mono">₹{order.token_amount}</span>
                 </div>

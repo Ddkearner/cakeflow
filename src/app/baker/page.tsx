@@ -781,12 +781,16 @@ function BakerPOSContent() {
     });
 
   const waitingOrders = orders
-    .filter((o) => o.status === "pending_token")
-    .sort(
-      (a, b) =>
+    .filter((o) => o.status === "pending_token" || o.status === "payment_claimed")
+    .sort((a, b) => {
+      // Payment claims always sit at the top of waiting queue
+      if (a.status === "payment_claimed" && b.status !== "payment_claimed") return -1;
+      if (b.status === "payment_claimed" && a.status !== "payment_claimed") return 1;
+      return (
         new Date(b.created_at || 0).getTime() -
         new Date(a.created_at || 0).getTime()
-    );
+      );
+    });
 
   const deliveredOrders = orders
     .filter((o) => o.status === "completed")
@@ -795,6 +799,8 @@ function BakerPOSContent() {
         new Date(b.created_at || 0).getTime() -
         new Date(a.created_at || 0).getTime()
     );
+
+  const paymentClaimsCount = orders.filter((o) => o.status === "payment_claimed").length;
 
   const displayedOrders =
     statusFilter === "kitchen"
@@ -865,6 +871,25 @@ function BakerPOSContent() {
           </div>
         </header>
 
+        {/* Verification Alert Banner for Claimed Payments */}
+        {paymentClaimsCount > 0 && (
+          <div
+            onClick={() => {
+              playTapSound();
+              setStatusFilter("waiting");
+            }}
+            className="px-4 py-2 bg-amber-50 border-b border-amber-200/80 flex items-center justify-between cursor-pointer active:bg-amber-100 transition-colors"
+          >
+            <div className="flex items-center gap-2 text-xs font-semibold text-amber-950">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              <span>
+                {paymentClaimsCount} Customer Payment{paymentClaimsCount > 1 ? "s" : ""} to Verify (Check Bank SMS)
+              </span>
+            </div>
+            <span className="text-[11px] font-bold text-amber-800 underline">Verify Now →</span>
+          </div>
+        )}
+
         {/* 3-Segment Switcher with Sliding Motion Pill */}
         <div className="px-4 py-2 bg-white">
           <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-zinc-100 text-xs font-semibold relative">
@@ -876,6 +901,7 @@ function BakerPOSContent() {
               ] as const
             ).map((tab) => {
               const isActive = statusFilter === tab.id;
+              const hasAlert = tab.id === "waiting" && paymentClaimsCount > 0;
               return (
                 <button
                   key={tab.id}
@@ -897,7 +923,11 @@ function BakerPOSContent() {
                   <span>{tab.label}</span>
                   <span
                     className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold transition-colors ${
-                      isActive ? "bg-zinc-950 text-white" : "bg-zinc-200 text-zinc-600"
+                      hasAlert
+                        ? "bg-amber-300 text-amber-950 animate-pulse font-extrabold"
+                        : isActive
+                        ? "bg-zinc-950 text-white"
+                        : "bg-zinc-200 text-zinc-600"
                     }`}
                   >
                     {tab.count}
@@ -989,9 +1019,88 @@ function BakerPOSContent() {
                   );
                 }
 
-                // 2. WAITING ORDERS (PENDING TOKEN - TAP TO EXPAND & DELETE)
-                if (ord.status === "pending_token") {
+                // 2. WAITING ORDERS (PENDING TOKEN & PAYMENT CLAIMS)
+                if (ord.status === "pending_token" || ord.status === "payment_claimed") {
+                  const isClaimed = ord.status === "payment_claimed";
                   const isExpanded = expandedWaitingOrderId === ord.id;
+
+                  if (isClaimed) {
+                    return (
+                      <motion.div
+                        key={ord.id}
+                        layout
+                        initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                        className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-300 shadow-xs space-y-2.5"
+                      >
+                        {/* Top Line: Alert & Order # */}
+                        <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-amber-200/80">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-950">
+                            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                            <span>Customer Claimed Payment • ₹{ord.token_amount}</span>
+                          </span>
+                          <span className="text-[10px] font-bold text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded-full font-mono">
+                            #{ord.order_number}
+                          </span>
+                        </div>
+
+                        {/* Order & Customer Info */}
+                        <div className="space-y-1 text-xs">
+                          <div className="font-bold text-zinc-950 text-sm leading-snug">
+                            {ord.weight} {ord.flavour}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-1.5 text-zinc-600">
+                            <span>{getFriendlyDateHeader(ord.delivery_date)}</span>
+                            <span>•</span>
+                            <span>{ord.time_slot}</span>
+                            <span>•</span>
+                            <span className="font-bold text-zinc-950">₹{ord.total_price} Total</span>
+                          </div>
+                          {(ord.customer_name || ord.customer_phone) && (
+                            <div className="pt-1 text-zinc-800 font-medium">
+                              Customer: <span className="font-bold text-zinc-950">{ord.customer_name || "Guest"}</span>
+                              {ord.customer_phone && ` (${ord.customer_phone})`}
+                            </div>
+                          )}
+                          <div className="text-[11px] text-amber-900 bg-amber-100/70 px-2.5 py-1 rounded-xl">
+                            👉 Please match <strong>₹{ord.token_amount}</strong> credit in your GPay / PhonePe SMS before accepting.
+                          </div>
+                        </div>
+
+                        {/* Baker 1-Tap Verification Action */}
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              playSuccessSound();
+                              updateOrderStatus(ord.id, "confirmed");
+                              showToast("Payment Verified! Moved to Kitchen ✓", "success");
+                            }}
+                            className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-98 cursor-pointer"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Accept Payment & Bake ✓</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              playTapSound();
+                              updateOrderStatus(ord.id, "pending_token");
+                              showToast("Reverted: Payment not received", "info");
+                            }}
+                            className="py-2.5 px-3 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-semibold text-xs border border-zinc-200/80 active:scale-98 cursor-pointer"
+                          >
+                            <span>Not Received</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    );
+                  }
                   return (
                     <motion.div
                       key={ord.id}
