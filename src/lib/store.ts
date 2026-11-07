@@ -303,17 +303,13 @@ export async function syncBakerToCloud(baker: Baker): Promise<boolean> {
       id: baker.id,
       slug: baker.slug,
       name: baker.name,
-      tagline: baker.tagline,
+      tagline: baker.tagline || "",
       phone: baker.phone,
       upi_id: baker.upi_id,
       pickup_address: baker.pickup_address,
       google_maps_url: baker.google_maps_url || null,
       secret_token: baker.secret_token,
       default_token_amount: baker.default_token_amount || 100,
-      pin: baker.pin || "1234",
-      max_daily_cakes: baker.max_daily_cakes || 4,
-      menu_items: baker.menu_items || DEFAULT_FLAVOURS,
-      addon_items: baker.addon_items || DEFAULT_ADDONS,
     };
 
     const { error } = await supabase.from("bakers").upsert(payload, {

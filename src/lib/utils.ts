@@ -28,7 +28,10 @@ export function generateSecretToken(slug: string): string {
 
 export function buildWhatsAppLink(phone: string, text: string): string {
   // Strip non-digits
-  const cleanPhone = phone.replace(/\D/g, "");
+  let cleanPhone = phone.replace(/\D/g, "");
+  if (cleanPhone.length === 10) {
+    cleanPhone = `91${cleanPhone}`;
+  }
   return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
 }
 
